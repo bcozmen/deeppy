@@ -1,2 +1,45 @@
 # deeppy
-Deep Learning Framework for python
+A deep learning framework that separates network architecture, data and the algorithm independent of each-other for flexible training.  
+
+1) Create a dataset object to handle the preprocessed dataset for supervised or unsupervised tasks or environment for the RL algorithms
+Renders as:
+```python
+env = gym.make("CartPole-v1", render_mode="rgb_array")
+data = EnvData(env, 20000, device= device)
+```  
+2) Decide on a network architecture, using torch.nn
+```python
+q_arch_params = {
+    "layers" : [4,128,128,2],
+    "type" : nn.Linear,
+    "hidden_act" : nn.ReLU,
+    "out_act" : nn.Identity,
+    "weight_init" : "uniform"
+}
+``` 
+3) Choose an algorithm to train
+```python
+model = Discrete_SAC(**sac_params)
+data = EnvData(env, 20000, device= device)
+``` 
+4) And lastly, initialize and train your learning frame
+```python
+lf = LearningFrame(model, data, batch_size = 128, start_size = 128)
+for epoch in range(EPOCH):
+	lf.train()
+	lf.test()
+``` 
+
+# Currently Implemented Algorithms
+
+[DQN](models/rl/dqn.py)
+[Double DQN](models/rl/dqn.py)
+[Clipped Double DQN](models/rl/dqn.py)
+[Discrete SAC](models/rl/sac.py)
+[Regression, Classification, Auto-encoders](networks/network.py) 
+
+# To be implemented
+[Beta-VAE]()
+[Model Based Policy Optimization (MBPO)]
+
+
