@@ -70,5 +70,6 @@ for epoch in range(EPOCH):
 [Dueling DQN]
 [PPO]
 [Model Based Policy Optimization (MBPO)]
+[SafeMBPO]
 
 

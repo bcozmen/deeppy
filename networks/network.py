@@ -123,3 +123,19 @@ class Network(nn.Module):
 			X = self.ensure_tensor_device(X)
 			return self.model[:len(self.model)//2](X)
 
+	def optimize(self, *X):
+		X,y = X
+		X,y = self.ensure_tensor_device(X), self.ensure_tensor_device(y)
+		outputs = self(X)
+		
+		loss = self.criterion(outputs, y)
+		self.back_propagate(loss)
+		return loss
+
+	def test(self, *X):
+		X,y = X
+		with torch.no_grad():
+			X,y = self.ensure_tensor_device(X), self.ensure_tensor_device(y)
+			outs = self(X)
+			loss = self.criterion(outs,y)
+		return loss
