@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from models.utils import Epsilon, TargetUpdater
+from models.rl.utils import Epsilon, TargetUpdater
 
 
 

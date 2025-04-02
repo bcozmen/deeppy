@@ -5,7 +5,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 import copy
 
-from models.dqn import DDQN
+from models.rl.dqn import DDQN
 
 
 
