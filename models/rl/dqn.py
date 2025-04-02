@@ -1,4 +1,4 @@
-from networks.FFN import Network
+from networks.network import Network
 import torch
 import torch.nn as nn
 import torch.optim as optim

@@ -6,32 +6,6 @@ import torch.optim as optim
 
 from torch.utils.data import Dataset, DataLoader, random_split, TensorDataset
 
-"""
-T
-C = Convolution
-L = Linear
-
-Batchnorm - no param
-Dropout - 1 param
-max-pooling - 1 param
-
-
-A1
-hid_act
-
-A2
-out_act
-
-Layers
-
-args
-
-
-
-
-
-"""
-
 class LayerGenerator():
 	def __init__(self):
 		pass
