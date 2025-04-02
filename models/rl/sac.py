@@ -1,4 +1,4 @@
-from networks.FFN import FFN
+from networks.FFN import Network
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -24,13 +24,13 @@ class Discrete_SAC():
 
 
         # Alpha
-        self.target_entropy = target_entropy_coeff * - torch.log(torch.tensor(pnet_params["layers"][-1]))
+        self.target_entropy = target_entropy_coeff * - torch.log(torch.tensor(pnet_params["arch_params"][-1]["layers"][-1]))
         self.log_alpha = torch.tensor([0.0], requires_grad=True)
         self.alpha = self.log_alpha.exp().detach()
         self.alpha_optimizer = optim.AdamW(params=[self.log_alpha], lr=alpha_lr, amsgrad = False)
 
         # Actor
-        self.policy_net = FFN(**pnet_params)
+        self.policy_net = Network(**pnet_params)
 
         # Critic networks
         self.ddqn = DDQN(**ddqn_params)

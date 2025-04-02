@@ -1,4 +1,4 @@
-from networks.FFN import FFN
+from networks.FFN import Network
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -143,8 +143,8 @@ class DQN():
         
         self.criterion = criterion()
         
-        self.q_net = FFN(**network_params)
-        self.target_net = FFN(**network_params)
+        self.q_net = Network(**network_params)
+        self.target_net = Network(**network_params)
         self.target_updater = TargetUpdater(main = self.q_net, target = self.target_net, tau = tau)   
         self.train()     
 
@@ -200,6 +200,4 @@ class DQN():
         self.target_updater.update()
     
     def back_propagate(self, loss):
-        self.q_net.optimizer.zero_grad()
-        loss.backward()
-        self.q_net.optimizer.step()
+        self.q_net.back_propagate(loss)
