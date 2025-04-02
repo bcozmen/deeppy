@@ -67,6 +67,8 @@ for epoch in range(EPOCH):
 
 # To be implemented
 [Beta-VAE]()
+[Dueling DQN]
+[PPO]
 [Model Based Policy Optimization (MBPO)]
 
 
