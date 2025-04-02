@@ -35,6 +35,8 @@ class EnvData():
         action = model.predict(self.state, self.env.action_space.sample)
         observation, reward, termination, truncation, data = self.env.step(action.item())
 
+        ret_reward = reward
+
         done = (termination or truncation)
 
         reward = torch.tensor([reward], device=self.device).unsqueeze(0)
@@ -50,5 +52,5 @@ class EnvData():
         self.state = next_state
         if done:
             self.reset()
-        return done
+        return done, ret_reward
 

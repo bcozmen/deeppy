@@ -19,16 +19,23 @@ class LearningFrame():
         self.batch_size = batch_size
         self.start_size = start_size
 
+        self.rewards = []
+        self.reward = 0
+
         self.durations = []
         self.duration = 0
-    def train(self, duration = True):
+    def train(self, metrics = True):
         self.model.train()
         if isinstance(self.data, EnvData):
-            done = self.data.collect(self.model)
+            done, reward = self.data.collect(self.model)
             self.duration +=1
-            if done and duration:
+            self.reward += reward
+            if done and metrics:
                 self.durations.append(self.duration)
                 self.duration = 0
+
+                self.rewards.append(self.reward)
+                self.reward = 0
             if len(self.data) > self.start_size:
                 X = self.data.train_data(self.batch_size)
                 self.model.optimize(*X)
@@ -38,14 +45,19 @@ class LearningFrame():
         self.model.eval()
         if isinstance(self.data, EnvData):
             counter = 0
-            self.data.reset()
-            while(not self.data.collect(self.model)):
-                counter += 1
-            return counter
+            cum_reward = 0
 
-    def plot_durations(self,show_result=False):
+            self.data.reset()
+            done = False
+            while(not done):
+                done, reward = self.data.collect(self.model)
+                counter += 1
+                cum_reward += reward
+            return counter, cum_reward
+
+    def plot(self,data ,show_result=False):
         plt.figure(1)
-        durations_t = torch.tensor(self.durations, dtype=torch.float)
+        durations_t = torch.tensor(data, dtype=torch.float)
         if show_result:
             plt.title('Result')
         else:
