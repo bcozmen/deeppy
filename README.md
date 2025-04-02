@@ -33,6 +33,18 @@ for epoch in range(EPOCH):
 # Currently Implemented Algorithms
 
 [DQN](models/rl/dqn.py)
+<details>
+  <summary>Click to expand</summary>
+
+  This is the hidden content that becomes visible when you click the summary.
+
+  - You can add lists
+  - **Bold text**, *italics*, and even code:
+  
+  ```python
+  print("Hello, World!")
+  ```
+</details> 
 [Double DQN](models/rl/dqn.py)
 [Clipped Double DQN](models/rl/dqn.py)
 [Discrete SAC](models/rl/sac.py)
