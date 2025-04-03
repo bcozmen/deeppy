@@ -20,14 +20,17 @@ q_arch_params = {
 3) Choose an algorithm to train
 ```python
 model = Discrete_SAC(**sac_params)
-data = EnvData(env, 20000, device= device)
 ``` 
 4) And lastly, initialize and train your learning frame
 ```python
 lf = LearningFrame(model, data, batch_size = 128, start_size = 128)
+
+#For each epoch
 for epoch in range(EPOCH):
-	lf.train()
-	lf.test()
+	#Play one game
+	while(not lf.train()):
+            pass
+lf.plot(lf.rewards,show_result= True)
 ``` 
 
 # Currently Implemented Algorithms
