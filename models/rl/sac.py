@@ -24,8 +24,8 @@ class Discrete_SAC():
 
 
         # Alpha
-        self.target_entropy = target_entropy_coeff * - torch.log(torch.tensor(pnet_params["arch_params"][-1]["layers"][-1]))
-        self.log_alpha = torch.tensor([0.0], requires_grad=True)
+        self.target_entropy = target_entropy_coeff * - torch.log(torch.tensor(pnet_params["arch_params"][-1]["layers"][-1], dtype = torch.float32))
+        self.log_alpha = torch.tensor([0.0], requires_grad=True, dtype = torch.float32)
         self.alpha = self.log_alpha.exp().detach()
         self.alpha_optimizer = optim.AdamW(params=[self.log_alpha], lr=alpha_lr, amsgrad = False)
 
@@ -94,13 +94,15 @@ class Discrete_SAC():
 
         Q_target_next = (action_probs * (Q_min_next - self.alpha.to(self.device) * log_pis)).sum(1)
 
-        next_state_values = torch.zeros(len(states), device=self.device)
+        next_state_values = torch.zeros(len(states), device=self.device, dtype = torch.float32)
         next_state_values[non_final_mask] = Q_target_next
 
+        
         Q_targets = rewards + (self.gamma * next_state_values.unsqueeze(-1))
 
         # compute critic loss
         q1,q2 = self.ddqn.compute_critic(states,actions)
+
         
 
         critic1_loss = 0.5 * self.criterion(q1, Q_targets)

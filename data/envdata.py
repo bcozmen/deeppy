@@ -39,7 +39,7 @@ class EnvData():
 
         done = (termination or truncation)
 
-        reward = torch.tensor([reward], device=self.device).unsqueeze(0)
+        reward = torch.tensor([reward], device=self.device, dtype = torch.float32).unsqueeze(0)
 
         if done:
             next_state = None
