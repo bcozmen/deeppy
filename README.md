@@ -65,11 +65,19 @@ for epoch in range(EPOCH):
   <summary>Details</summary>
 </details> 
 
-# To be implemented
-[Beta-VAE]()
+# To do
+### Policies
+
+[Beta-VAE]
+
 [Dueling DQN]
+
 [PPO]
+
 [Model Based Policy Optimization (MBPO)]
+
 [SafeMBPO]
 
+### Features
+Save-load model checkpoints
 
