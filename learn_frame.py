@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import torch
 from IPython import display
+from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 
 class LearningFrame():
     def __init__(self, model, data, batch_size, start_size =None):
@@ -55,6 +57,31 @@ class LearningFrame():
                 cum_reward += reward
             return counter, cum_reward
 
+    def save_gif(self, name):
+        frames = []
+        self.data.reset()
+        
+        frames.append(self.data.env.render())
+        done = False
+        while(not done):
+            done, reward = self.data.collect(self.model)
+            frames.append(self.data.env.render())
+ 
+
+        fig, ax = plt.subplots()
+        def animate(t):
+            ax.cla()
+            ax.imshow(frames[t])
+
+        anim = FuncAnimation(fig, animate, frames=len(frames), interval = 100)
+
+        fig.suptitle(name, fontsize=14) 
+          
+        # saving to m4 using ffmpeg writer 
+        writervideo = animation.FFMpegWriter(fps=60) 
+        anim.save(name + ".mp4", writer=writervideo) 
+        plt.close()
+
     def plot(self,data ,show_result=False):
         plt.figure(1)
         durations_t = torch.tensor(data, dtype=torch.float)
@@ -64,7 +91,7 @@ class LearningFrame():
             plt.clf()
             plt.title('Training...')
         plt.xlabel('Episode')
-        plt.ylabel('Duration')
+        plt.ylabel('Reward')
         plt.plot(durations_t.numpy())
         # Take 100 episode averages and plot them too
         if len(durations_t) >= 100:
