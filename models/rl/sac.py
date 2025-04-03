@@ -128,7 +128,7 @@ class Discrete_SAC():
 
         # Compute and back propagate
         actor_loss = (action_probs * ((alpha * log_pis) - min_Q)).sum(1).mean()
-        self.back_propagate(self.policy_net.optimizer, actor_loss)
+        self.policy_net.back_propagate(actor_loss)
         return actor_loss, action_probs, log_pis
 
 

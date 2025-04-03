@@ -9,6 +9,7 @@ from models.rl.utils import Epsilon, TargetUpdater
 
 
 
+
 class DDQN():
     def __init__(self, network_params, device = None, criterion = nn.MSELoss, 
                  gamma = 0.99, 
@@ -24,6 +25,8 @@ class DDQN():
             self.eps = Epsilon(eps = 0, eps_end = 0)
         
         network_params["device"] = device
+
+
 
         
         self.tau = tau

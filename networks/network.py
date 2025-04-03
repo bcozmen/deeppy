@@ -6,6 +6,7 @@ import torch.optim as optim
 
 from torch.utils.data import Dataset, DataLoader, random_split, TensorDataset
 
+from utils import Scheduler
 class LayerGenerator():
 	def __init__(self):
 		pass
@@ -61,7 +62,7 @@ class LayerGenerator():
 
 class Network(nn.Module):
 	def __init__(self, arch_params, task = "reg", criterion = nn.MSELoss, device = None,
-					   optimizer = optim.AdamW, lr = 0.01, weight_decay = 0):
+					   optimizer = optim.AdamW, lr = 0.01, weight_decay = 0 , scheduler_params = None):
 		super(Network, self).__init__()
 
 		self.layer_generator = LayerGenerator()
@@ -79,6 +80,11 @@ class Network(nn.Module):
 			net += self.layer_generator.generate(**param)
 		self.model = nn.Sequential(*net)
 		self.optimizer = optimizer(self.model.parameters() , lr= lr, weight_decay = weight_decay, amsgrad = True)
+		
+		self.scheduler = None
+		if scheduler_params is not None:
+			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
+
 		self.to(self.device)
 
 	def predict(self, x):
@@ -95,6 +101,8 @@ class Network(nn.Module):
 		self.optimizer.zero_grad()
 		loss.backward()
 		self.optimizer.step()
+		if self.scheduler is not None:
+			self.scheduler.step()
 
 	def forward(self, X):
 		X = self.ensure_tensor_device(X)
@@ -116,12 +124,17 @@ class Network(nn.Module):
 		x = self.ensure_device(self.ensure_tensor(x))
 		return x
 
-	def encode(self, X):
-		with torch.no_grad():
-			if self.task != "autoencoder":
-				return None
-			X = self.ensure_tensor_device(X)
-			return self.model[:len(self.model)//2](X)
+	def encode(self, X):	
+		if self.task != "autoencoder":
+			return None
+		X = self.ensure_tensor_device(X)
+		return self.model[:len(self.model)//2](X)
+
+	def decode(self, X):
+		if self.task != "autoencoder":
+			return None
+		X = self.ensure_tensor_device(X)
+		return self.model[len(self.model)//2:](X)
 
 	def optimize(self, *X):
 		X,y = X
