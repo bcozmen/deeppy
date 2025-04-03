@@ -12,27 +12,33 @@ class LayerGenerator():
 		pass
 
 
-	def generate(self, layers, type, decs = [], args = [], hidden_act = nn.ReLU, out_act = nn.ReLU, weight_init = None):
+	def generate(self, type,layers = [], decs = [], args = [], hidden_act = nn.ReLU, out_act = nn.ReLU, weight_init = None):
 		net = []
 		
-		
-		for ix, (i_size, o_size) in enumerate(zip(layers[:-1], layers[1:])):
-			if ix != len(layers)-2:
-				act = hidden_act()
-			else:
-				act = out_act()  
-			
-			if len(args) > 0:
-				layer = type(i_size, o_size, **(args[0]))
-			else:
-				layer = type(i_size, o_size)
-			
-			self.init_weights(layer,act, weight_init=weight_init)
-			net.append(layer)
+		if len(layers) > 1:
+			for ix, (i_size, o_size) in enumerate(zip(layers[:-1], layers[1:])):
+				if ix != len(layers)-2:
+					act = hidden_act()
+				else:
+					act = out_act()  
+				
+				if len(args) > 0:
+					layer = type(i_size, o_size, **(args[0]))
+				else:
+					layer = type(i_size, o_size)
+				
+				self.init_weights(layer,act, weight_init=weight_init)
+				net.append(layer)
 
-			for dec,arg in zip(decs,args[1:]):
-				net.append(dec(**arg))
-			net.append(act)
+				for dec,arg in zip(decs,args[1:]):
+					net.append(dec(**arg))
+				net.append(act)
+		else:
+			if len(args) > 0:
+				layer = type(**(args[0]))
+			else:
+				layer = type()
+			net.append(layer)
 
 		return net
 
@@ -90,9 +96,12 @@ class Network(nn.Module):
 	def predict(self, x):
 		pass
 		
+
 	def optimize(self, *X):
-		X, y = X
+		X,y = X
+		X,y = self.ensure_tensor_device(X), self.ensure_tensor_device(y)
 		outputs = self(X)
+		
 		loss = self.criterion(outputs, y)
 		self.back_propagate(loss)
 		return loss
@@ -111,6 +120,7 @@ class Network(nn.Module):
 		if not self.training and self.task == "classify":
 			return (logits > 0.5).float()
 		return logits
+
 
 	def ensure_tensor(self,x):
 		if not torch.is_tensor(x):
@@ -136,14 +146,6 @@ class Network(nn.Module):
 		X = self.ensure_tensor_device(X)
 		return self.model[len(self.model)//2:](X)
 
-	def optimize(self, *X):
-		X,y = X
-		X,y = self.ensure_tensor_device(X), self.ensure_tensor_device(y)
-		outputs = self(X)
-		
-		loss = self.criterion(outputs, y)
-		self.back_propagate(loss)
-		return loss
 
 	def test(self, *X):
 		X,y = X
