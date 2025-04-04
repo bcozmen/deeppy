@@ -33,7 +33,7 @@ for epoch in range(EPOCH):
 lf.plot(lf.rewards,show_result= True)
 ``` 
 
-For example usage see [this jupyter notebook](examply.ipynb)
+For example usage see [this jupyter notebook](example.ipynb)
 
 # Currently Implemented Algorithms
 

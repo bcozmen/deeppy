@@ -67,8 +67,8 @@ class LayerGenerator():
 			nn.init.zeros_(layer.bias)
 
 class Network(nn.Module):
-	def __init__(self, arch_params, task = "reg", criterion = nn.MSELoss, device = None,
-					   optimizer = optim.AdamW, lr = 0.01, weight_decay = 0 , scheduler_params = None):
+	def __init__(self, arch_params, decoder_params = None, task = "reg", criterion = nn.MSELoss, device = None,
+					   optimizer = optim.AdamW, lr = 1e-4, weight_decay = 0 , scheduler_params = None):
 		super(Network, self).__init__()
 
 		self.layer_generator = LayerGenerator()
@@ -84,6 +84,12 @@ class Network(nn.Module):
 		net = []
 		for param in arch_params:
 			net += self.layer_generator.generate(**param)
+
+		if self.task == "autoencoder" and decoder_params is not None:
+			self.encoder_len = len(net)
+			for param in decoder_params:
+				net += self.layer_generator.generate(**param)
+
 		self.model = nn.Sequential(*net)
 		self.optimizer = optimizer(self.model.parameters() , lr= lr, weight_decay = weight_decay, amsgrad = True)
 		
@@ -93,13 +99,14 @@ class Network(nn.Module):
 
 		self.to(self.device)
 
-	def predict(self, x):
-		pass
+	def predict(self, X):
+		return self.forward(X)
+		
 		
 
 	def optimize(self, *X):
 		X,y = X
-		X,y = self.ensure_tensor_device(X), self.ensure_tensor_device(y)
+		X,y = map(self.ensure_tensor_device,list(X))
 		outputs = self(X)
 		
 		loss = self.criterion(outputs, y)
@@ -121,30 +128,25 @@ class Network(nn.Module):
 			return (logits > 0.5).float()
 		return logits
 
-
-	def ensure_tensor(self,x):
+		
+	def ensure_tensor_device(self,x):
 		if not torch.is_tensor(x):
 			x = torch.tensor(x, dtype=torch.float32)  # Convert to tensor if it's not already one
-		return x
-	def ensure_device(self,x):
 		if x.device != self.device:
 			x = x.to(self.device)
-		return x
-	def ensure_tensor_device(self,x):
-		x = self.ensure_device(self.ensure_tensor(x))
 		return x
 
 	def encode(self, X):	
 		if self.task != "autoencoder":
 			return None
 		X = self.ensure_tensor_device(X)
-		return self.model[:len(self.model)//2](X)
+		return self.model[:self.encoder_len](X)
 
 	def decode(self, X):
 		if self.task != "autoencoder":
 			return None
 		X = self.ensure_tensor_device(X)
-		return self.model[len(self.model)//2:](X)
+		return self.model[self.encoder_len:](X)
 
 
 	def test(self, *X):

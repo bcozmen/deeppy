@@ -2,11 +2,14 @@ from data.replay_buffer import Transition, ReplayBuffer
 import torch
 
 
+
 class EnvData():
-    def __init__(self, env, buffer_size,  device = None):
+    def __init__(self, env, buffer_size, batch_size, start_size = 0, device = None):
         self.memory = ReplayBuffer(buffer_size)
         self.env = env
         self.device = device
+        self.batch_size = batch_size
+        self.start_size = start_size
 
         self.reset()
     def reset(self):
@@ -14,8 +17,10 @@ class EnvData():
         self.state = torch.tensor(self.state, dtype=torch.float32, device=self.device).unsqueeze(0)
     def __len__(self):
         return len(self.memory)
-    def train_data(self, batch_size):
-        transitions = self.memory.sample(batch_size)
+    def train_data(self):
+        if len(self.memory) < self.start_size:
+            return None
+        transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
 
         # Compute a mask of non-final states and concatenate the batch elements

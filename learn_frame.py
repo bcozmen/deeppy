@@ -9,7 +9,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
 
 class LearningFrame():
-    def __init__(self, model, data, batch_size, start_size =None):
+    def __init__(self, model, data):
 
 
 
@@ -18,30 +18,49 @@ class LearningFrame():
         plt.ion()
         self.model=model
         self.data = data
-        self.batch_size = batch_size
-        self.start_size = start_size
+
+        metrics = []
+
 
         self.rewards = []
         self.reward = 0
 
         self.durations = []
         self.duration = 0
-    def train(self, metrics = True):
-        self.model.train()
-        if isinstance(self.data, EnvData):
-            done, reward = self.data.collect(self.model)
-            self.duration +=1
-            self.reward += reward
-            if done and metrics:
-                self.durations.append(self.duration)
-                self.duration = 0
 
-                self.rewards.append(self.reward)
-                self.reward = 0
-            if len(self.data) > self.start_size:
-                X = self.data.train_data(self.batch_size)
-                self.model.optimize(*X)
-            return done
+        self.train_loss = [[],[],[]]
+        self.test_loss = [[],[],[]]
+    def collect(self):
+        self.model.train()
+
+        try:
+            self.data.collect
+        except:
+            raise TypeError("Data has no collect")
+
+        done, reward = self.data.collect(self.model)
+        self.duration +=1
+        self.reward += reward
+
+        if done:
+            self.durations.append(self.duration)
+            self.duration = 0
+
+            self.rewards.append(self.reward)
+            self.reward = 0
+
+    def train(self):
+        self.model.train()
+        X = self.data.train_data()
+
+        #For RL models, if start_size is not reached
+        if X is None:
+            return 0
+        loss, mse, kl = self.model.optimize(*X)
+        self.train_loss[0].append(loss)
+        self.train_loss[1].append(mse)
+        self.train_loss[2].append(kl)
+        return loss
 
     def test(self):
         self.model.eval()
@@ -56,8 +75,15 @@ class LearningFrame():
                 counter += 1
                 cum_reward += reward
             return counter, cum_reward
+        else:
+            X = self.data.test_data()
+            loss, mse, kl = self.model.test(*X)
+            self.test_loss[0].append(loss)
+            self.test_loss[1].append(mse)
+            self.test_loss[2].append(kl)
+            return loss
 
-    def save_gif(self, name):
+    def get_anim(self, name = None):
         frames = []
         self.data.reset()
         
@@ -75,6 +101,8 @@ class LearningFrame():
 
         anim = FuncAnimation(fig, animate, frames=len(frames), interval = 100)
 
+        if name is None:
+            return anim
         fig.suptitle(name, fontsize=14) 
           
         # saving to m4 using ffmpeg writer 
@@ -82,9 +110,8 @@ class LearningFrame():
         anim.save(name + ".mp4", writer=writervideo) 
         plt.close()
 
-    def plot(self,data ,show_result=False):
+    def plot(self,datas, labels,show_result=False):
         plt.figure(1)
-        durations_t = torch.tensor(data, dtype=torch.float)
         if show_result:
             plt.title('Result')
         else:
@@ -92,13 +119,17 @@ class LearningFrame():
             plt.title('Training...')
         plt.xlabel('Episode')
         plt.ylabel('Reward')
-        plt.plot(durations_t.numpy())
-        # Take 100 episode averages and plot them too
-        if len(durations_t) >= 100:
-            means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
-            means = torch.cat((torch.zeros(99), means))
-            plt.plot(means.numpy())
-    
+
+        for data,label in zip(datas,labels):
+            durations_t = torch.tensor(data, dtype=torch.float)
+            
+            plt.plot(durations_t.numpy(), label = label)
+            # Take 100 episode averages and plot them too
+            if False and len(durations_t) >= 100:
+                means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+                means = torch.cat((torch.zeros(99), means))
+                plt.plot(means.numpy(), label = label)
+        plt.legend()
         plt.pause(0.001)  # pause a bit so that plots are updated
         if self.is_ipython:
             if not show_result:
