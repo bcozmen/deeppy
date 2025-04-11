@@ -35,10 +35,9 @@ class LearnFrame():
 
         self.train_data = []
         self.test_data = []
+
         self.duration_data = []
         self.reward_data = []
-
-        
 
     def scheduler_step():
         self.model.scheduler_step()
@@ -159,7 +158,7 @@ class LearnFrame():
         anim.save(name + ".mp4", writer=writervideo) 
         plt.close()
 
-    def plot(self,datas, labels,show_result=False):
+    def plot(self,datas, labels,show_result=False, save = None):
         #datas = [[1,2,3]]
 
         num_rows = len(datas)
@@ -183,7 +182,11 @@ class LearnFrame():
                 ax.plot(data.T, label = label)
         
             ax.legend()
+        if save is not None:
+            plt.savefig(save)
         plt.pause(0.001)  # pause a bit so that plots are updated
+
+
         if self.is_ipython:
             if not show_result:
                 display.display(plt.gcf())

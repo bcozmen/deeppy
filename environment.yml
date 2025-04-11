@@ -191,6 +191,7 @@ dependencies:
       - chex==0.1.89
       - cloudpickle==3.1.1
       - cython==0.29.37
+      - docopt==0.6.2
       - etils==1.12.2
       - farama-notifications==0.0.4
       - fasteners==0.19
@@ -203,8 +204,11 @@ dependencies:
       - imageio==2.37.0
       - imageio-ffmpeg==0.6.0
       - importlib-resources==6.5.2
+      - ipywidgets==8.1.5
       - jax==0.5.3
       - jaxlib==0.5.3
+      - joblib==1.4.2
+      - jupyterlab-widgets==3.0.13
       - markdown-it-py==3.0.0
       - mdurl==0.1.2
       - ml-dtypes==0.5.1
@@ -230,28 +234,28 @@ dependencies:
       - optax==0.2.4
       - orbax-checkpoint==0.11.11
       - pillow==10.4.0
+      - pipreqs==0.4.13
       - proglog==0.1.11
       - protobuf==6.30.2
       - pygame==2.6.1
       - pyopengl==3.1.9
       - python-dotenv==1.1.0
       - rich==14.0.0
+      - scikit-learn==1.6.1
       - scipy==1.15.2
       - simplejson==3.20.1
       - swig==4.3.0
       - sympy==1.13.1
       - tensorstore==0.1.73
+      - threadpoolctl==3.6.0
       - toolz==1.0.0
       - torch==2.6.0+cu118
       - torchaudio==2.6.0+cu118
       - torchvision==0.21.0+cu118
       - tqdm==4.67.1
-      - simplejson==3.20.1
-      - swig==4.3.0
-      - sympy==1.13.1
-      - tensorstore==0.1.73
-      - toolz==1.0.0
       - treescope==0.1.9
       - triton==3.2.0
+      - widgetsnbextension==4.0.13
+      - yarg==0.1.10
       - zipp==3.21.0
 prefix: /home/boz/anaconda3/envs/deeppy
