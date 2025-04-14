@@ -64,7 +64,7 @@ Working on it :)
 
 # Currently Implemented Algorithms
 ### Reinforcement Learning
-
+<details>
  
 For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutorials.ipynb)
 
@@ -91,11 +91,11 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
         Discrete   - https://arxiv.org/abs/1910.07207
         Continuous - https://arxiv.org/abs/1812.05905
 </details> 
-
+</details>
 
 ### Auto-Encoder
 
-
+<details>
 
 [B-Vae](models/autoencoder/b_vae.py)
 <details>
@@ -104,7 +104,7 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
          For tutorials and examples please see [tutorials](tutorials/networks_advanced.ipynb)
 	               - https://openreview.net/forum?id=Sy2fzU9gl
 </details> 
-
+</details>
 
 ### Basic-Model
 
@@ -130,6 +130,9 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
 
 [SafeMBPO]
 </details>
+
+### GPT
+Basic GPT
 
 ### XAI Tools (Explainable AI)
 
