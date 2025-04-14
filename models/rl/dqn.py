@@ -34,7 +34,7 @@ class DQN(BaseModel):
         self.eps, self.criterion, = self.objects
 
     def predict(self, X):
-        X, = self.ensure(*[X])
+        X = self.ensure(X)
         if self.training:
             self.eps.update()
 
@@ -51,8 +51,8 @@ class DQN(BaseModel):
 
         return actions
     
-    def optimize(self, *X):
-        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(*X)
+    def optimize(self, X):
+        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(X)
         non_final_mask = torch.logical_not(done)
 
         state_action_values = self.q_net(state_batch).gather(1, action_batch)
@@ -112,7 +112,7 @@ class DDQN(BaseModel):
         if self.mode == "Q":
             raise ValueError("Only for V networks")
 
-        X, = self.ensure(*[X])
+        X = self.ensure(X)
 
         if self.training:
             self.eps.update()
@@ -127,10 +127,10 @@ class DDQN(BaseModel):
                 action = self.q_net1.q_net(X).max(1,keepdim=True).indices
         return action
 
-    def optimize(self, *X):
+    def optimize(self, X):
         # Compute 0.5 (Q(s, a) - (r(s,a) + gamma (pi(s+1)[Q(s+1) - alpha log(pi(s+1))])^2
-        state_batch, action_batch, reward_batch, non_final_mask, non_final_next_states = self.ensure(*X)
-        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(*X)
+        #state_batch, action_batch, reward_batch, non_final_mask, non_final_next_states = self.ensure(X)
+        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(X)
         non_final_mask = torch.logical_not(done)
 
 

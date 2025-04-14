@@ -88,7 +88,7 @@ class LearnFrame():
         if X is None:
             return None
 
-        r = self.model.optimize(*X)
+        r = self.model.optimize(X)
         self.train_data.append(r)
         self.lrs.append(self.model.last_lr())
 
@@ -109,7 +109,7 @@ class LearnFrame():
                 cum_reward += 1
         else:
             X = self.data.test_data()
-            r = self.model.test(*X)
+            r = self.model.test(X)
             self.test_data.append(r)
 
     def save(self, file_name):

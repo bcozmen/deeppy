@@ -24,7 +24,7 @@ class B_Vae(BaseModel):
 		pass	
 
 	def predict(self, X):
-		X, = self.ensure(*[X])
+		X = self.ensure(X)
 		latent = self.net.encode(X)
 		z, mu, logvar = self.reparametrize(latent)
 		y_pred = self.net.decode(z)
@@ -32,8 +32,8 @@ class B_Vae(BaseModel):
 		return y_pred, mu, logvar
 
 	
-	def optimize(self, *X):
-		X,y = self.ensure(*X)
+	def optimize(self, X):
+		X,y = self.ensure(X)
 		y_pred, mu, logvar = self.predict(X)
 		con_loss = self.criterion(y_pred, y)  
 		kl_loss = self.kl_loss(mu, logvar)
@@ -43,8 +43,8 @@ class B_Vae(BaseModel):
 
 		return loss.item(), con_loss.item(), kl_loss.item()
 
-	def test(self, *X):
-		X,y = self.ensure(*X)
+	def test(self, X):
+		X,y = self.ensure(X)
 		
 		with torch.no_grad():
 			y_pred, mu, logvar = self.predict(X)

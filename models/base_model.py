@@ -39,10 +39,10 @@ class BaseModel(ABC):
 		pass
 
 	@abstractmethod
-	def optimize(self, *X):
+	def optimize(self, X):
 		pass
 
-	def test(self, *X):
+	def test(self, X):
 		pass
 
 	def train(self):
@@ -59,9 +59,11 @@ class BaseModel(ABC):
 			X = X.to(self.device,non_blocking=True)
 		return X
 
-	def ensure(self, *X):
-		return map(self.ensure_tensor_device,list(X))
-
+	def ensure(self, X):
+		if isinstance(X,tuple):
+			return tuple(map(self.ensure_tensor_device,X))
+		else:
+			return self.ensure_tensor_device(X)
 	def save(self,file_name = None, return_dict=False):
 		save_dict = {
 			"params" : self.params,
@@ -118,7 +120,6 @@ class Model(BaseModel):
 		super().__init__(device = device, criterion=criterion)
 
 		self.net = Network(**network_params).to(self.device)
-		self.task = self.net.task
 
 		self.params = [network_params, device]
 		self.nets = [self.net]
@@ -131,17 +132,13 @@ class Model(BaseModel):
 
 	
 	def predict(self,X):
-		data = self.ensure(*[X])
+		X = self.ensure(X)
 		outs = self.net.forward(X)
 		return outs
 
 	
-	def optimize(self, *X):
-		if self.task == "autoencoder":
-			X, = self.ensure(*X)  
-			y = X
-		else:
-			X,y = self.ensure(*X)  
+	def optimize(self, X):
+		X,y = self.ensure(X)  
 		outs = self.predict(X)
 
 		loss = self.criterion(outs,y)
@@ -149,12 +146,8 @@ class Model(BaseModel):
 
 		return loss.item()
 
-	def test(self, *X):
-		if self.task == "autoencoder":
-			X, = self.ensure(*X)  
-			y = X
-		else:
-			X,y = self.ensure(*X)  
+	def test(self, X):
+		X,y = self.ensure(X)  
 		
 
 		with torch.no_grad():

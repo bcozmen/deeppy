@@ -52,7 +52,6 @@ class DataGetter(Base):
             "train_dataset" : self.train_dataset,
             "test_dataset" : self.test_dataset,
             "valid_dataset"        : self.valid_dataset,
-            "dataset"     : self.dataset
         }
         torch.save(params, file_name + '/memory.pkl')
 
@@ -61,14 +60,13 @@ class DataGetter(Base):
         self.train_dataset = params["train_dataset"]
         self.test_dataset = params["test_dataset"]
         self.valid_dataset = params["valid_dataset"] 
-        self.dataset = params["dataset"]
 
     def train_data(self):
-        return next(iter(self.train_loader))
+        return tuple(next(iter(self.train_loader)))
     def test_data(self):
-        return next(iter(self.test_loader))
+        return tuple(next(iter(self.test_loader)))
     def valid_data(self):
-        return next(iter(self.valid_loader))
+        return tuple(next(iter(self.valid_loader)))
 
     def create_loaders(self):
         if self.test_batch_size is None:
@@ -78,10 +76,10 @@ class DataGetter(Base):
             self.valid_batch_size = self.batch_size
 
         if self.test_dataset is None:
-            self.test_size = int(self.test_size * len(self.dataset))
-            train_size = len(self.dataset) - test_size
+            self.test_size = int(self.test_size * len(self.train_dataset))
+            train_size = len(self.train_dataset) - self.test_size
 
-            self.train_dataset, self.test_dataset = random_split(self.train_dataset, [train_size, test_size])
+            self.train_dataset, self.test_dataset = random_split(self.train_dataset, [train_size, self.test_size])
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=self.num_workers)
         if self.test_size > 0:

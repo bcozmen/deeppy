@@ -146,8 +146,8 @@ class RLIntroduction():
 		}
 		return SAC_params
 	def get_sac_discrete_params(self):
-		layers = [self.obs,256,256,self.act]
-		lr = 1e-4
+		layers = [self.obs,256,256,256,self.act]
+		lr = 3*1e-4
 
 		arch_params = {
 		    "layers":layers,
@@ -166,7 +166,8 @@ class RLIntroduction():
 		    "pnet_params":Network_params,
 		    "alpha_lr":lr,
 		    "device": self.device,
-		    "criterion":nn.SmoothL1Loss(),
+		    "criterion":nn.MSELoss(),
+		    "target_entropy":-4.0,
 		}
 		return SAC_params
 

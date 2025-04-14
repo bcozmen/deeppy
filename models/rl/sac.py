@@ -54,14 +54,14 @@ class SAC(BaseModel):
 
 
     def predict(self, X):
-        X, = self.ensure(*[X])
+        X = self.ensure(X)
         with torch.no_grad():
             action, action_probs, log_pis = self.get_action(X)
         return action
 
 
     def get_action(self, X):
-        X, = self.ensure(*[X])
+        X = self.ensure(X)
         action_probs = self.policy_net(X) #(Batch, 2dim)
 
         if self.mode == "discrete":
@@ -93,31 +93,11 @@ class SAC(BaseModel):
 
             #log_action_probs -= (2*( - x_t - nn.functional.softplus(-2*x_t)) + torch.log(torch.tensor(2)) ).sum(1)
             
-            
-        if torch.isnan(action).any():
-            print("Started action")
-            print(std)
-            print(mu)
-            print(x_t)
-            print(action_probs)
-        if torch.isnan(log_action_probs).any():
-            print("111Started action")
-            print(mu)
-            print(std)
-            print(action_probs)
-            print(x_t)
-            print(action)
-            le()
-        if torch.isnan(action_probs).any():
-            print("222Started action")
-        if torch.isnan(mu).any():
-            print("333 action")
-
 
         return action, action_probs, log_action_probs
 
-    def optimize(self, *X):
-        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(*X)
+    def optimize(self, X):
+        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(X)
         """
         print(state_batch.shape)
         print(action_batch.shape)
@@ -171,18 +151,6 @@ class SAC(BaseModel):
 
         self.ddqn.back_propagate(critic1_loss,critic2_loss)
 
-        if torch.isnan(critic1_loss).any() or torch.isnan(critic2_loss).any():
-            print('Started Qloss')
-            print(torch.isnan(next_state_values).any()) 
-            print(torch.isnan(log_pis).any()) 
-            print(torch.isnan(non_final_mask).any()) 
-            print(torch.isnan(Q_min_next).any())
-            print(next_state_values)
-            print(log_pis)
-            print(Q_min_next)
-            print(self.alpha) 
-            print('----------')
-            le()
 
         return critic1_loss, critic2_loss        
 

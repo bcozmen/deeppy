@@ -19,7 +19,7 @@ class ReplayBuffer():
         self.buffer.extend([Transition(*k) for k in zip(*args)])
 
     def sample(self, batch_size):
-        return [torch.stack(k) for k in (zip(*random.sample(self.buffer,batch_size)))]
+        return tuple([torch.stack(k) for k in (zip(*random.sample(self.buffer,batch_size)))])
 
 class EnvData(Base):
     def __init__(self, env, buffer_size = 20000, batch_size = 128, start_size = 128):
