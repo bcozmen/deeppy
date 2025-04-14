@@ -76,3 +76,16 @@ class EnvData(Base):
         with open(file_name + '/memory.pkl', 'rb') as f:
             self.memory.buffer = pickle.load(f)
 
+    def emulate(self,model):
+        counter = 0
+        cum_reward = 0
+        done = False
+
+        self.reset()
+        model.eval()
+        while(not done):
+            done ,reward = self.collect(model)
+            counter += 1
+            cum_reward += reward
+        self.reset()
+        return counter, cum_reward

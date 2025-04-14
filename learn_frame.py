@@ -18,56 +18,130 @@ from matplotlib.animation import FuncAnimation
 from IPython.display import HTML
 import numpy as np
 
+
+
+
+    
+class Metric():
+    def __init__(self,labels, env_data=False):
+        #Labels list of strings for plot labels
+        self.env_data = env_data
+        self.plot_lr = False
+
+        self.is_ipython = 'inline' in matplotlib.get_backend()
+        plt.ion()
+
+        self.labels = labels
+        self.train_data,self.test_data = [], []
+
+        self.reward, self.duration = 0,0
+        self.duration_data, self.reward_data = [],[]
+        
+        self.lrs = []
+
+    def env_reset(self):
+        self.reward, self.duration = 0,0
+
+    def env_done(self):
+        self.duration_data.append(self.duration)
+        self.reward_data.append(self.reward)
+        self.env_reset()
+    def env_step(self,reward, done):
+        self.duration +=1
+        self.reward += reward
+        if done:
+            self.env_done()
+
+
+
+    def plot(self, log= False, show_result = False, save = None):
+        if self.env_data:
+            data = [self.reward_data, self.duration_data]
+            labels = ["Reward", "Duration"]
+        else:
+            data = [ [self.train_data, self.test_data]]
+            labels = [ [["Test " +lbl for lbl in self.labels], ["Train " +lbl for lbl in self.labels]]]
+        if self.plot_lr:
+            data += self.lrs
+            labels += ["Learning Rate"]
+        self.plot_data(data,labels,log=log,show_result=show_result,save=save)
+
+
+    def plot_ax(self,ax,data, label, log = False):
+        ax.set_xlabel('Episode')
+        ax.clear()
+        #ax.set_ylabel(name)
+        ax.grid(True)
+
+        if log:
+            data = np.log10(data)
+
+
+        if isinstance(label,str):
+            data = [data]
+            label = [label]
+        for d,l in zip(data,label):
+            d = np.asarray(d)
+            ax.plot(d,label=l)
+        ax.legend()
+
+    def plot_data(self,datas,labels, log=False,show_result=False, save = None):
+        num_rows = len(labels)
+        fig,axes = plt.subplots(num_rows, figsize = (10,6*num_rows))
+        if num_rows == 1:
+            axes = [axes]
+
+
+        plt.xlabel('Episode')
+
+
+        for data,label,ax in zip(datas,labels,axes):
+            self.plot_ax(ax,data,label, log = log)
+        
+        if save is not None:
+            plt.savefig(save)
+        plt.pause(0.001)  # pause a bit so that plots are updated
+
+
+        if self.is_ipython:
+            if not show_result:
+                display.display(plt.gcf())
+                display.clear_output(wait=True)
+            else:
+                display.display(plt.gcf())
+
+
+
+
+
+        
 class LearnFrame():
     print_args = classmethod(print_args)
     def __init__(self, model, data):
-        self.is_ipython = 'inline' in matplotlib.get_backend()
-            
-        plt.ion()
+        
         self.model=model
+        self.return_labels = self.model.optimize_return_labels
+        env_data = False
+        if isinstance(data, EnvData):
+            env_data = True
+        self.metric = Metric(self.return_labels, env_data = env_data)
+
         if data == DataGetter:
             data = data()
         self.data = data
 
 
-        self.duration = 0
-        self.reward=0
-
-        self.train_data = []
-        self.test_data = []
-
-        self.duration_data = []
-        self.reward_data = []
-        self.lrs = []
-
     def scheduler_step(self):
         self.model.scheduler_step()
 
     def reset(self):
-        self.duration = 0
-        self.reward = 0
         self.data.reset()
+        self.metric.env_reset()
+
     def collect(self):
         self.model.train()
-
-        try:
-            self.data.collect
-        except:
-            raise TypeError("Data has no collect")
-
         done, reward = self.data.collect(self.model)
-        self.duration +=1
-        self.reward += reward
-
-
-
-        if done:
-            self.duration_data.append(self.duration)
-            self.reward_data.append(self.reward)
-
-            self.duration = 0
-            self.reward = 0
-
+        self.metric.env_step(reward,done)
         return done
 
     def optimize(self):
@@ -88,29 +162,23 @@ class LearnFrame():
         if X is None:
             return None
 
-        r = self.model.optimize(X)
-        self.train_data.append(r)
-        self.lrs.append(self.model.last_lr())
+        train = self.model.optimize(X)
+        self.metric.train_data.append(train)
+        self.metric.lrs.append(self.model.last_lr()[0])
 
-        return r
+        return train
         
 
     def test(self):
         self.model.eval()
         if isinstance(self.data, EnvData):
-            counter = 0
-            cum_reward = 0
-
-            self.data.reset()
-            done = False
-            while(not done):
-                done = self.data.collect(self.model)
-                counter += 1
-                cum_reward += 1
+            dur, rew = self.data.emulate(self.model)
+            self.metric.duration_data.append(dur)
+            self.metric.reward_data.append(rew)
         else:
             X = self.data.test_data()
-            r = self.model.test(X)
-            self.test_data.append(r)
+            test = self.model.test(X)
+            self.metric.test_data.append(test)
 
     def save(self, file_name):
         self.data.save(file_name)
@@ -118,10 +186,7 @@ class LearnFrame():
 
         with open(file_name + "/data.pkl", 'wb') as f:
             pickle.dump({
-                'train_data': self.train_data,
-                'test_data': self.test_data,
-                'duration_data': self.duration_data,
-                'reward_data': self.reward_data,
+                'metric': self.metric,
             }, f)
 
     def load(self, file_name, load_data = True):
@@ -130,16 +195,13 @@ class LearnFrame():
             self.data.load(file_name = file_name)
         with open(file_name + "/data.pkl", 'rb') as f:
             data = pickle.load(f)
-            self.train_data = data['train_data']
-            self.test_data = data['test_data']
-            self.duration_data = data['duration_data']
-            self.reward_data = data['reward_data']
+            self.metric = data['metric']
 
 
     def get_anim(self, name = None, interval = 100):
         frames = []
         self.data.reset()
-        
+        self.model.eval()
         frames.append(self.data.env.render())
         done = False
         while(not done):
@@ -163,41 +225,11 @@ class LearnFrame():
         anim.save(name + ".mp4", writer=writervideo) 
         plt.close()
 
-    def plot(self,datas, labels,show_result=False, save = None):
-        #datas = [[1,2,3]]
-
-        num_rows = len(datas)
-        fig,axes = plt.subplots(num_rows, figsize = (10,6*num_rows))
-        if num_rows == 1:
-            axes = [axes]
+    def plot(self, show_result = False, log = False,save = None):
+        self.metric.plot(show_result=show_result, log=log,save=save)
 
 
-        plt.xlabel('Episode')
 
-
-        for data,label,ax in zip(datas,labels,axes):
-            ax.clear()
-            #ax.set_ylabel(name)
-            ax.grid(True)
-            data = np.asarray(data)
-
-            if len(data.shape) == 1:
-                ax.plot(data, label = label)
-            else:
-                ax.plot(data.T, label = label)
-        
-            ax.legend()
-        if save is not None:
-            plt.savefig(save)
-        plt.pause(0.001)  # pause a bit so that plots are updated
-
-
-        if self.is_ipython:
-            if not show_result:
-                display.display(plt.gcf())
-                display.clear_output(wait=True)
-            else:
-                display.display(plt.gcf())
 
 
 

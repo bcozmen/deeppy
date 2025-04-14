@@ -14,7 +14,7 @@ class BaseModel(ABC):
     """
 	print_args = classmethod(print_args)
 	dependencies = []
-
+	optimize_return_labels = []
 	def __init__(self, device = None, criterion = nn.MSELoss()):
 		"""
         Initializes Base model
@@ -116,6 +116,7 @@ class BaseModel(ABC):
 class Model(BaseModel):
 	print_args = classmethod(print_args)
 	dependencies = [Network]
+	optimize_return_labels = ["Loss"]
 	def __init__(self, network_params, device = None, criterion = nn.MSELoss()):
 		super().__init__(device = device, criterion=criterion)
 

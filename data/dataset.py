@@ -49,17 +49,17 @@ class DataGetter(Base):
     
     def save(self,file_name):
         params = {
-            "train_dataset" : self.train_dataset,
-            "test_dataset" : self.test_dataset,
-            "valid_dataset"        : self.valid_dataset,
+            "train_loader" : self.train_loader,
+            "test_loader" : self.test_loader,
+            "valid_loader"        : self.valid_loader,
         }
         torch.save(params, file_name + '/memory.pkl')
 
     def load(self, file_name):
         params = torch.load(file_name  + '/memory.pkl', weights_only = False)
-        self.train_dataset = params["train_dataset"]
-        self.test_dataset = params["test_dataset"]
-        self.valid_dataset = params["valid_dataset"] 
+        self.train_loader = params["train_loader"]
+        self.test_loader = params["test_loader"]
+        self.valid_loader = params["valid_loader"] 
 
     def train_data(self):
         return tuple(next(iter(self.train_loader)))
@@ -82,6 +82,8 @@ class DataGetter(Base):
             self.train_dataset, self.test_dataset = random_split(self.train_dataset, [train_size, self.test_size])
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=self.num_workers)
+        self.test_loader = None
+        self.valid_loader = None
         if self.test_size > 0:
             self.test_loader = DataLoader(self.test_dataset, batch_size=self.test_batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=self.num_workers)
 

@@ -17,6 +17,7 @@ class SAC(BaseModel):
     Continuous - https://arxiv.org/abs/1812.05905
     """
     dependencies = [Network, DDQN]
+    optimize_return_labels = ["Mean Critic Loss", "Actor Loss", "Alpha Loss"]
     def __init__(self, ddqn_params, pnet_params, alpha_lr, gamma =0.99, target_entropy = -1. , device = None, criterion = nn.MSELoss(), mode = "discrete", continuous_action = torch.tanh):
         super().__init__(device = device, criterion = criterion)
 
@@ -76,8 +77,8 @@ class SAC(BaseModel):
             z = z.float() * 1e-8
             log_action_probs = torch.log(action_probs+z)
         else:
-            action_probs = action_probs.shape[1]//2
-            mu, std = action_probs[:, :action_probs], torch.abs(action_probs[:, action_probs:])
+            len_latent = action_probs.shape[1]//2
+            mu, std = action_probs[:, :len_latent], torch.abs(action_probs[:, len_latent:])
             std = torch.clamp(std, min = 1e-6, max = 4)
 
 

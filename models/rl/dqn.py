@@ -8,6 +8,7 @@ from deeppy.models.base_model import BaseModel
 
 class DQN(BaseModel):
     dependencies = [Network, Epsilon, TargetUpdater]
+    optimize_return_labels = ["Loss"]
     def __init__(self, network_params, gamma = 0.99, tau = 0.005, eps_params = {"eps":None}, variant = "DQN" ,  device = None, criterion = nn.MSELoss()):
         super().__init__(device = device, criterion = criterion)
 
@@ -84,6 +85,7 @@ class DQN(BaseModel):
 
 class DDQN(BaseModel):
     dependencies = [Network, Epsilon]
+    optimize_return_labels = ["Mean Critic Loss"]
     def __init__(self, network_params, gamma = 0.99,tau = 0.005,  eps_params = {"eps":None},  device = None, criterion = nn.MSELoss()):
         super().__init__(device = device, criterion = criterion)
         #Q = Q(s,a) -> 1

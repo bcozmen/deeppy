@@ -17,7 +17,7 @@ def plot_scheduler(scheduler, params, step = 1000):
     def plot_lr(scheduler, optimizer,step=1000):
         lrs = []
         for i in range(step):
-            lr = optimizer.param_groups[0]['lr']
+            lr = scheduler.get_last_lr()
             scheduler.step()
             lrs.append(lr)
 
@@ -25,7 +25,7 @@ def plot_scheduler(scheduler, params, step = 1000):
     scheduler = scheduler(optimizer,**params)
     
 
-    return plot_lr(scheduler, optimizer)
+    return plot_lr(scheduler, optimizer, step=step)
 
 def print_args(self, depth = 0, print_only_this = False):
     if not print_only_this:

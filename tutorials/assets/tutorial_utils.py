@@ -50,6 +50,7 @@ def get_toy_data_and_plot():
 
 	return X,y
 
+
 class RLIntroduction():
 	def __init__(self, tut=None):
 		self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -73,6 +74,7 @@ class RLIntroduction():
 		self.env =  gym.make(self.env_name, render_mode="rgb_array")
 		if tut == 3:
 			self.env = TransformReward(self.env, lambda r: 5*r)
+
 		try:
 			self.obs, self.act = self.env.observation_space.shape[-1], self.env.action_space.shape[-1]
 		except:
@@ -96,6 +98,14 @@ class RLIntroduction():
 		"gamma":0.01**(1/1000),
 		"auto_step":False,
 		"step_size" : 1
+		}
+
+		Scheduler_params = {
+		"scheduler" : optim.lr_scheduler.CyclicLR,
+		"base_lr":1e-5,
+		"max_lr":5*1e-4,
+		"auto_step":True,
+		"step_size_up" : 2000
 		}
 
 		Optimizer_params = {
@@ -146,14 +156,15 @@ class RLIntroduction():
 		}
 		return SAC_params
 	def get_sac_discrete_params(self):
-		layers = [self.obs,256,256,256,self.act]
-		lr = 3*1e-4
+		layers = [self.obs,128,128,128,self.act]
+		lr = 1e-5
 
 		arch_params = {
 		    "layers":layers,
 		    "blocks":[nn.Linear, nn.ReLU],
 		    "out_act":nn.Softmax,
 		    "out_params":{"dim":1},
+		    "weight_init" : None,
 		}
 
 		Network_params = {
@@ -167,7 +178,7 @@ class RLIntroduction():
 		    "alpha_lr":lr,
 		    "device": self.device,
 		    "criterion":nn.MSELoss(),
-		    "target_entropy":-4.0,
+		    "target_entropy":-1.0,
 		}
 		return SAC_params
 
@@ -188,6 +199,7 @@ class RLIntroduction():
 		    "layers":layers,
 		    "blocks":[nn.Linear, nn.ReLU],
 		    "out_act":nn.Identity,
+		    "weight_init" : None,
 		}
 		
 		Network_params = {
@@ -212,11 +224,12 @@ class RLIntroduction():
 	def get_dqn_params(self):
 		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		layers = [self.obs,128,128,self.act]
-		lr = 5*1e-4
+		lr = 3*1e-4
 		arch_params = {
 		    "layers":layers,
 		    "blocks":[nn.Linear, nn.ReLU],
 		    "out_act":nn.Identity,
+		    "weight_init" : None
 		}
 		Network_params = {
 		    "arch_params" : [arch_params],
