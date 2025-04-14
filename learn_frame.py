@@ -38,11 +38,15 @@ class LearnFrame():
 
         self.duration_data = []
         self.reward_data = []
+        self.lrs = []
 
-    def scheduler_step():
+    def scheduler_step(self):
         self.model.scheduler_step()
 
-    
+    def reset(self):
+        self.duration = 0
+        self.reward = 0
+        self.data.reset()
     def collect(self):
         self.model.train()
 
@@ -86,6 +90,7 @@ class LearnFrame():
 
         r = self.model.optimize(*X)
         self.train_data.append(r)
+        self.lrs.append(self.model.last_lr())
 
         return r
         

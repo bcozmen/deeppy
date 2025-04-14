@@ -11,9 +11,11 @@ print(dp.data.algorithm)
 For Networks
 dp.data.Network.print_args()
 """
-from .utils import *
-from .learn_frame import *
+from deeppy.utils import *
+from deeppy.learn_frame import *
 
+from deeppy.models import *
+from deeppy.data import *
 from . import models, data
 
 

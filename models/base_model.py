@@ -72,6 +72,8 @@ class BaseModel(ABC):
 			return save_dict
 		torch.save(save_dict, file_name + "/checkpoint.pt")
 
+	def last_lr(self):
+		return [net.last_lr() for net in self.nets]
 	def scheduler_step(self):
 		for net in self.nets:
 			net.scheduler_step()
@@ -105,15 +107,7 @@ class BaseModel(ABC):
 		for net,net_dicts in zip(self.nets, dicts):
 			net.load_states(net_dicts)
 
-	def reparametrize(self,latent, get_max = False):
-		latent_size = latent.shape[1]//2
-		mu, std = latent[:, :latent_size], torch.abs(latent[:, latent_size:])
-		std = torch.clamp(std, min = 1e-6, max = 4)
-		eps = torch.randn_like(std, device = self.device, dtype = torch.float32)
-
-		z = mu + eps * std
-
-		return z, mu, std
+	
 
 
 

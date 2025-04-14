@@ -22,7 +22,7 @@ class FromLoader(Base):
         pass
 
 class DataGetter(Base):
-    def __init__(self,X=None, y= None, X_valid = None, 
+    def __init__(self,X=None, y= None, X_valid = None, X_test = None, y_test = None, 
                  test_size = 0.2, test_batch_size = None, valid_batch_size = None,
                  batch_size = 64, num_workers = 0, pin_memory=True, shuffle = True):
         super().__init__(batch_size = batch_size, num_workers = num_workers, pin_memory = pin_memory, shuffle = shuffle)
@@ -35,8 +35,13 @@ class DataGetter(Base):
         self.test_batch_size = test_batch_size
         self.valid_batch_size = valid_batch_size
 
-        self.dataset = Data(X=X,y=y)
-        self.valid = Data(X=X_valid)
+        self.train_dataset = Data(X=X,y=y)
+        if X_test is not None:
+            self.test_dataset = Data(X=X_test, y= y_test)
+        else:
+            self.test_dataset = None
+            
+        self.valid_dataset = Data(X=X_valid)
 
         if X is not None:
             self.create_loaders()
@@ -46,7 +51,7 @@ class DataGetter(Base):
         params = {
             "train_dataset" : self.train_dataset,
             "test_dataset" : self.test_dataset,
-            "valid"        : self.valid,
+            "valid_dataset"        : self.valid_dataset,
             "dataset"     : self.dataset
         }
         torch.save(params, file_name + '/memory.pkl')
@@ -55,7 +60,7 @@ class DataGetter(Base):
         params = torch.load(file_name  + '/memory.pkl', weights_only = False)
         self.train_dataset = params["train_dataset"]
         self.test_dataset = params["test_dataset"]
-        self.valid = params["valid"] 
+        self.valid_dataset = params["valid_dataset"] 
         self.dataset = params["dataset"]
 
     def train_data(self):
@@ -72,16 +77,17 @@ class DataGetter(Base):
         if self.valid_batch_size is None:
             self.valid_batch_size = self.batch_size
 
-        test_size = int(self.test_size * len(self.dataset))
-        train_size = len(self.dataset) - test_size
+        if self.test_dataset is None:
+            self.test_size = int(self.test_size * len(self.dataset))
+            train_size = len(self.dataset) - test_size
 
-        self.train_dataset, self.test_dataset = random_split(self.dataset, [train_size, test_size])
+            self.train_dataset, self.test_dataset = random_split(self.train_dataset, [train_size, test_size])
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=self.num_workers)
-        if test_size > 0:
+        if self.test_size > 0:
             self.test_loader = DataLoader(self.test_dataset, batch_size=self.test_batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=self.num_workers)
 
-        if self.valid.X is not None:
+        if self.valid_dataset.X is not None:
             self.valid_loader = DataLoader(self.valid, batch_size=self.valid_batch_size, shuffle=True, pin_memory=self.pin_memory, num_workers=self.num_workers)
 
 class Data(Dataset):

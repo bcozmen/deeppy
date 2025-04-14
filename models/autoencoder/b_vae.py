@@ -36,9 +36,9 @@ class B_Vae(BaseModel):
 		X,y = self.ensure(*X)
 		y_pred, mu, logvar = self.predict(X)
 		con_loss = self.criterion(y_pred, y)  
-		kl_loss = self.beta * self.kl_loss(mu, logvar)
+		kl_loss = self.kl_loss(mu, logvar)
 
-		loss = con_loss + kl_loss
+		loss = con_loss + self.beta * kl_loss
 		self.net.back_propagate(loss)
 
 		return loss.item(), con_loss.item(), kl_loss.item()
@@ -59,5 +59,15 @@ class B_Vae(BaseModel):
 	def kl_loss(self, mu, logvar):
 		kl = 0.5 * (torch.pow(mu,2) + torch.exp(logvar) - logvar - 1)
 		return kl.sum(1).mean(0)
+
+	def reparametrize(self,latent):
+		latent_size = latent.shape[1]//2
+		mu, logvar = latent[:, :latent_size], latent[:, latent_size:]
+		std = torch.exp(0.5 *logvar)
+		eps = torch.randn_like(std, device = self.device, dtype = torch.float32)
+
+		z = mu + eps * std
+
+		return z, mu, logvar
 
 	

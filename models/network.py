@@ -82,6 +82,8 @@ class Network(nn.Module):
 
 	def scheduler_step(self):
 		self.optimizer.scheduler.step()
+	def last_lr(self):
+		return self.optimizer.scheduler.scheduler.get_last_lr()[0]
 
 
 

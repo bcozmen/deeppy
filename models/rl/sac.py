@@ -59,8 +59,6 @@ class SAC(BaseModel):
             action, action_probs, log_pis = self.get_action(X)
         return action
 
-    def fast_log_normal(self,x, mu, std):
-        return -0.5 * torch.log(2 * torch.pi * (std**2) + 1e-6) - (x-mu)**2 / (2 * (std**2) + 1e-6)
 
     def get_action(self, X):
         X, = self.ensure(*[X])
@@ -78,7 +76,10 @@ class SAC(BaseModel):
             z = z.float() * 1e-8
             log_action_probs = torch.log(action_probs+z)
         else:
-            x_t, mu, std = self.reparametrize(action_probs) #(Batch, dim)
+            action_probs = action_probs.shape[1]//2
+            mu, std = action_probs[:, :action_probs], torch.abs(action_probs[:, action_probs:])
+            std = torch.clamp(std, min = 1e-6, max = 4)
+
 
             normal = torch.distributions.Normal(mu, std)
             x_t = normal.rsample()
@@ -86,7 +87,6 @@ class SAC(BaseModel):
             if not self.training:
                 x_t = mu
 
-            #log_action_probs = self.fast_log_normal(x_t, mu, std).sum(1,keepdim=True)#(Batch, 1)
             action = self.continuous_action(x_t) #(Batch, 1)
             log_action_probs -= torch.log((3 * (1 - (action)).pow(2)) + 1e-6)
             
