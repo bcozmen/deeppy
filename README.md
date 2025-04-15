@@ -38,6 +38,7 @@ for epoch in range(EPOCH):
 	lf.collect()
 	#Train SAC one step
 	lf.optimize()
+#Automatic plotting 
 lf.plot()
 ``` 
 ![](tutorials/assets/plot.jpg)
