@@ -13,14 +13,14 @@ With the planned integration of XAI tools, Deeppy will offer clearer insights in
 ```python
 import deeppy as dp
 
-env = gym.make("LunarLander-v1", render_mode="rgb_array")
-data = dp.EnvData(env, buffer_size=100000, device= device)
+env = gym.make("LunarLander-v1")
+data = dp.EnvData(env, buffer_size=100000)
 ```  
 ### 2 - Create Your Neural-Network
 ```python
 policy_network = {
     "layers" : [obs,128,128,act],
-    "blocks" : [nn.Linear,
+    "blocks" : [nn.Linear, nn.ReLU]
     "out_act" : nn.Softmax,
     "weight_init" : "uniform"
 }
@@ -34,7 +34,9 @@ model = dp.SAC(**sac_params) #Soft Actor Critic
 lf = dp.LearningFrame(model, data)
 
 for epoch in range(EPOCH):
+	#Take one step in environment using the model
 	lf.collect()
+	#Train SAC one step
 	lf.optimize()
 lf.plot()
 ``` 
