@@ -28,9 +28,10 @@ class Optimizer():
 		if scheduler_params is not None:
 			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
 	
-	def step(self,loss):
-		self.optimizer.zero_grad()
-		loss.backward()
+	def step(self,loss = None):
+		if loss is not None:
+			self.optimizer.zero_grad()
+			loss.backward()
 
 		if self.clipper is not None:
 			self.clipper(self.model.parameters(), **self.clipper_params)
