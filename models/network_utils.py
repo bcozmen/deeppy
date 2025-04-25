@@ -72,7 +72,7 @@ class Optimizer():
 class LayerGenerator():
 	print_args = classmethod(print_args)
 	
-	def generate(self, layers = [], blocks = [] ,block_args = [], out_act = nn.ReLU,  out_params = {}, weight_init = None):
+	def generate(self, layers = [], blocks = [] ,block_args = [], out_act = nn.Identity,  out_params = {}, weight_init = None):
 		if out_act is None and len(layers) > 0 :
 			raise ValueError("out_act cannot be none. Please use nn.Identity()")
 		self.weight_init = weight_init

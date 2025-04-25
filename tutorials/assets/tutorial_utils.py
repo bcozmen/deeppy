@@ -14,7 +14,9 @@ sys.path.append(os.path.abspath('../../..'))
 import deeppy as dp
 
 
-def get_toy_data_and_plot():
+
+
+def get_toy_data_and_plot(is_plot=True, norm =0):
 	def f(X,Y):
 		return np.sin(X)*np.cos(Y) + np.cos(X)*np.sin(Y)
 	
@@ -26,29 +28,50 @@ def get_toy_data_and_plot():
 	X = torch.tensor(X, dtype = torch.float32)
 	y = f(X[:,0], X[:,1]).reshape(X1.shape).flatten().unsqueeze(1)
 
-	X = X / 4 + 0.5
+	if norm == 0:
+		X = X / 4 + 0.5
+	else:
+		X = X/2	
 
-	print(f"X shape : {X.shape}")
-	print(f"y shape : {y.shape}")
+	if is_plot:
+		print(f"X shape : {X.shape}")
+		print(f"y shape : {y.shape}")
 
-	fig = plt.figure(figsize=(8, 6))
-	ax = fig.add_subplot(111, projection='3d')
-	ax.view_init(elev=45, azim=135)  # You can tweak these values
-	# Plot the surface
-	surf = ax.plot_surface(X[:,0].reshape(X1.shape), X[:,1].reshape(X1.shape), y.reshape(X1.shape))
+		fig = plt.figure(figsize=(8, 6))
+		ax = fig.add_subplot(111, projection='3d')
+		ax.view_init(elev=45, azim=135)  # You can tweak these values
+		# Plot the surface
+		surf = ax.plot_surface(X[:,0].reshape(X1.shape), X[:,1].reshape(X1.shape), y.reshape(X1.shape))
 
-	# Add labels and title
-	ax.set_title("3D Plot of f(X, Y) = sin(X)cos(Y) + cos(X)sin(Y)")
-	ax.set_xlabel("X1")
-	ax.set_ylabel("X2")
-	ax.set_zlabel("f(X, Y)")
+		# Add labels and title
+		ax.set_title("3D Plot of f(X, Y) = sin(X)cos(Y) + cos(X)sin(Y)")
+		ax.set_xlabel("X1")
+		ax.set_ylabel("X2")
+		ax.set_zlabel("f(X, Y)")
 
-	# Add color bar
+		# Add color bar
 
-	# Show plot
-	plt.show()
+		# Show plot
+		plt.show()
 
 	return X,y
+
+def get_toy_dataset():
+	X,y = get_toy_data_and_plot(is_plot=False)
+	DataGetter_params = {
+	    "X" : X,
+	    "y": y,
+	    "X_valid":None,
+	    "test_size":0.,
+	    "test_batch_size":None,
+	    "valid_batch_size":None,
+	    "batch_size":128,
+	    "num_workers":0,
+	    "pin_memory":True,
+	    "shuffle":True,
+	}
+
+	return dp.data.DataGetter(**DataGetter_params)
 
 
 class RLIntroduction():

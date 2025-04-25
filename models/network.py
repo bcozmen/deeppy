@@ -30,8 +30,8 @@ class Network(nn.Module):
 		self.arch_params = arch_params
 		self.decoder_params = decoder_params
 
-		self.encoder_len = None
-		self.model = self.generate()
+		
+		self.generate()
 
 		self.optimizer_params = optimizer_params
 		self.optimizer = Optimizer(self.model, **self.optimizer_params)
@@ -49,15 +49,25 @@ class Network(nn.Module):
 	def generate(self):
 		layer_generator = LayerGenerator()
 		net = []
+		net_modules = [0]
 		for param in self.arch_params:
 			net += layer_generator.generate(**param)
+			net_modules.append(len(net))
+
 
 		if self.task == "autoencoder" and self.decoder_params is not None:
 			self.encoder_len = len(net)
 			for param in self.decoder_params:
 				net += layer_generator.generate(**param)
-
+				net_modules.append(len(net))
+		
+		self.net_modules = net_modules
+		self.model = nn.Sequential(*net)
 		return nn.Sequential(*net)
+
+	def partial_forward(self,X, ix):
+		start_ix, end_ix = self.net_modules[ix], self.net_modules[ix+1]
+		return self.model[start_ox : end_ix](X)
 
 	def forward(self, X):
 		logits = self.model(X)

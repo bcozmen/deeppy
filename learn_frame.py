@@ -62,7 +62,7 @@ class Metric():
             data = [ [self.train_data, self.test_data]]
             labels = [ [["Test " +lbl for lbl in self.labels], ["Train " +lbl for lbl in self.labels]]]
         if self.plot_lr:
-            data += self.lrs
+            data += [self.lrs]
             labels += ["Learning Rate"]
         self.plot_data(data,labels,log=log,show_result=show_result,save=save)
 
@@ -73,15 +73,17 @@ class Metric():
         #ax.set_ylabel(name)
         ax.grid(True)
 
-        if log:
-            data = np.log10(data)
+        
+        is_lr = (label == "Learning Rate")
 
+        if is_lr:
+            data = np.log10([data])
+            label = np.asarray([label])
 
-        if isinstance(label,str):
-            data = [data]
-            label = [label]
         for d,l in zip(data,label):
             d = np.asarray(d)
+            if log and not is_lr:
+                d = np.log10(d)
             ax.plot(d,label=l)
         ax.legend()
 
