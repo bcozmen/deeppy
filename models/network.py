@@ -67,7 +67,7 @@ class Network(nn.Module):
 
 	def partial_forward(self,X, ix):
 		start_ix, end_ix = self.net_modules[ix], self.net_modules[ix+1]
-		return self.model[start_ox : end_ix](X)
+		return self.model[start_ix : end_ix](X)
 
 	def forward(self, X):
 		logits = self.model(X)
