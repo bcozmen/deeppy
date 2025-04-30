@@ -64,7 +64,10 @@ class Optimizer():
 
 		
 
-
+class extract_tensor_from_tupple(nn.Module):
+    def forward(self,x):
+        tensor, _ = x
+        return tensor
 
 
 
@@ -113,6 +116,8 @@ class LayerGenerator():
 					bargs["num_features"] = out
 				net.append(block(**bargs))
 
+
+
 		#If just one layer is given (like nn.Linear), initialize the out activation function too
 		if len(net) == 1:
 			block = out_act
@@ -127,6 +132,9 @@ class LayerGenerator():
 		if len(net) == 0:
 			for block,args in zip(blocks, block_args):
 				net.append(block(**args))
+				if block.__name__ in ["RNN","LSTM", "GRU"]:
+					net.append(extract_tensor_from_tupple())
+
 
 		return net
 

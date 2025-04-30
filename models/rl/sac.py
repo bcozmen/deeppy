@@ -54,7 +54,7 @@ class SAC(BaseModel):
         self.criterion = self.objects[0]
 
 
-    def predict(self, X):
+    def __call__(self, X):
         X = self.ensure(X)
         with torch.no_grad():
             action, action_probs, log_pis = self.get_action(X)

@@ -29,13 +29,14 @@ class BaseModel(ABC):
 		self.nets = []
 		self.params = []
 		self.objects = []
+
 	
 	@abstractmethod
 	def init_objects(self):
 		pass
 
 	@abstractmethod
-	def predict(self,X):
+	def __call__(self,X):
 		pass
 
 	@abstractmethod
@@ -132,15 +133,19 @@ class Model(BaseModel):
 		self.criterion = self.objects[0]
 
 	
-	def predict(self,X):
+	def __call__(self,X):
 		X = self.ensure(X)
 		outs = self.net.forward(X)
 		return outs
-
+		
+	def __call__(self, X):
+		X = self.ensure(X)
+		outs = self.net.forward(X)
+		return outs
 	
 	def optimize(self, X):
 		X,y = self.ensure(X)  
-		outs = self.predict(X)
+		outs = self(X)
 
 		loss = self.criterion(outs,y)
 		self.net.back_propagate(loss)
@@ -152,7 +157,7 @@ class Model(BaseModel):
 		
 
 		with torch.no_grad():
-			outs = self.predict(X)
+			outs = self(X)
 			loss = self.criterion(outs,y)	
 
 		return loss.item()

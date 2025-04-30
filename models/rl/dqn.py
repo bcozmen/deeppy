@@ -34,7 +34,7 @@ class DQN(BaseModel):
     def init_objects(self):
         self.eps, self.criterion, = self.objects
 
-    def predict(self, X):
+    def __call__(self, X):
         X = self.ensure(X)
         if self.training:
             self.eps.update()
@@ -109,7 +109,7 @@ class DDQN(BaseModel):
     def init_objects(self):
         self.eps, self.criterion, = self.objects
     
-    def predict(self, X):
+    def __call__(self, X):
         #Only for V value
         if self.mode == "Q":
             raise ValueError("Only for V networks")
@@ -139,7 +139,7 @@ class DDQN(BaseModel):
         q1,q2 = self.compute_critic(state_batch, action_batch)
         
         self.eval()
-        next_action = self.predict(next_state_batch)
+        next_action = self(next_state_batch)
         self.train() 
         next_state_values = self.compute_target(next_state_batch, action = next_action) * non_final_mask 
         

@@ -10,7 +10,6 @@ class B_Vae(BaseModel):
 	dependencies = [Network]
 	optimize_return_labels = ["Loss", "MSE Loss", "KL Loss"]
 	def __init__(self, network_params,  beta,  device = None, criterion = nn.MSELoss()):
-
 		super().__init__(device= device, criterion = criterion)
 		self.beta = beta
 		self.network_params = network_params
@@ -24,7 +23,7 @@ class B_Vae(BaseModel):
 	def init_objects(self):
 		pass	
 
-	def predict(self, X):
+	def __call__(self, X):
 		X = self.ensure(X)
 		latent = self.net.encode(X)
 		z, mu, logvar = self.reparametrize(latent)
@@ -35,7 +34,7 @@ class B_Vae(BaseModel):
 	
 	def optimize(self, X):
 		X,y = self.ensure(X)
-		y_pred, mu, logvar = self.predict(X)
+		y_pred, mu, logvar = self(X)
 		con_loss = self.criterion(y_pred, y)  
 		kl_loss = self.kl_loss(mu, logvar)
 
@@ -48,7 +47,7 @@ class B_Vae(BaseModel):
 		X,y = self.ensure(X)
 		
 		with torch.no_grad():
-			y_pred, mu, logvar = self.predict(X)
+			y_pred, mu, logvar = self(X)
 		
 			con_loss = self.criterion(y_pred, y)  
 			kl_loss = self.beta * self.kl_loss(mu, logvar)
