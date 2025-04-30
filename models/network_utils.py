@@ -64,9 +64,10 @@ class Optimizer():
 
 		
 
-class extract_tensor_from_tupple(nn.Module):
+class recurrent_layer_helper(nn.Module):
     def forward(self,x):
-        tensor, _ = x
+        tensor, states = x
+        self.states = states
         return tensor
 
 
@@ -133,7 +134,7 @@ class LayerGenerator():
 			for block,args in zip(blocks, block_args):
 				net.append(block(**args))
 				if block.__name__ in ["RNN","LSTM", "GRU"]:
-					net.append(extract_tensor_from_tupple())
+					net.append(recurrent_layer_helper())
 
 
 		return net
