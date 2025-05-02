@@ -115,8 +115,17 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
 <summary>See Details</summary>
 
         For tutorials and examples please see [tutorials](tutorials/introduction.ipynb)
->
+
 </details>
+
+### GPT
+<details>
+	<summary>See Details</summary>
+
+ 	For tutorials and examples please see [tutorials](tutorials/GPT-tutorial.ipynb)
+
+</details>
+
 
 # To do
 ### RL
@@ -134,10 +143,10 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
 [SafeMBPO]
 </details>
 
-### GPT
-Basic GPT
 
 ### XAI Tools (Explainable AI)
+
+### CV - NERF
 
 ### Neuroevolution
 
