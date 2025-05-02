@@ -103,8 +103,6 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
 [B-Vae](models/autoencoder/b_vae.py)
 <details>
 <summary>Papers</summary>
-
-         For tutorials and examples please see [tutorials](tutorials/networks_advanced.ipynb)
 	               - https://openreview.net/forum?id=Sy2fzU9gl
 </details> 
 </details>
@@ -114,15 +112,15 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
 <details>
 <summary>See Details</summary>
 
-        For tutorials and examples please see [tutorials](tutorials/introduction.ipynb)
+For tutorials and examples please see [tutorials](tutorials/introduction.ipynb)
 
 </details>
 
 ### GPT
 <details>
-	<summary>See Details</summary>
+<summary>See Details</summary>
 
- 	For tutorials and examples please see [tutorials](tutorials/GPT-tutorial.ipynb)
+For tutorials and examples please see [tutorials](tutorials/GPT-tutorial.ipynb)
 
 </details>
 
