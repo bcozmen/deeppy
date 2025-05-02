@@ -23,7 +23,7 @@ import numpy as np
 
     
 class Metric():
-    def __init__(self,labels, env_data=False):
+    def __init__(self,train_labels,test_labels, env_data=False):
         #Labels list of strings for plot labels
         self.env_data = env_data
         self.plot_lr = False
@@ -31,7 +31,8 @@ class Metric():
         self.is_ipython = 'inline' in matplotlib.get_backend()
         plt.ion()
 
-        self.labels = labels
+        self.train_labels = train_labels
+        self.test_labels = test_labels
         self.train_data,self.test_data = [], []
 
         self.reward, self.duration = 0,0
@@ -60,7 +61,7 @@ class Metric():
             labels = ["Reward", "Duration"]
         else:
             data = [ [self.train_data, self.test_data]]
-            labels = [ [["Train " +lbl for lbl in self.labels], ["Test " +lbl for lbl in self.labels]]]
+            labels = [ [["Train " +lbl for lbl in self.train_labels], ["Test " +lbl for lbl in self.test_labels]]]
         if self.plot_lr:
             data += [self.lrs]
             labels += ["Learning Rate"]
@@ -123,10 +124,15 @@ class LearnFrame():
         
         self.model=model
         self.return_labels = self.model.optimize_return_labels
+
+        try:
+            self.test_return_labels = self.model.test_return_labels
+        except:
+            self.test_return_labels = self.return_labels
         env_data = False
         if isinstance(data, EnvData):
             env_data = True
-        self.metric = Metric(self.return_labels, env_data = env_data)
+        self.metric = Metric(self.return_labels, self.test_return_labels, env_data = env_data)
 
         if data == DataGetter:
             data = data()

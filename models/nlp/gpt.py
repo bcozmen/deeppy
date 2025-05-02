@@ -22,6 +22,7 @@ class GPTPositionalEncoder(nn.Module):
 class GPT(BaseModel):
 	dependencies = []
 	optimize_return_labels = ["Loss"]
+	test_return_labels = ["Accuracy"]
 	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, max_seq_len=11, device = None, criterion = nn.CrossEntropyLoss()):
 		super().__init__(device = device, criterion=criterion)
 
@@ -30,7 +31,6 @@ class GPT(BaseModel):
 		self.max_seq_len = max_seq_len
 		self.num_heads = num_heads
 		self.num_layers = num_layers
-
 
 		encoder = nn.TransformerEncoderLayer(d_model = embed_dim, nhead= num_heads, dim_feedforward = embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True)
 
@@ -91,9 +91,10 @@ class GPT(BaseModel):
 
 		y0 = y[0]
 		ysize = len(y0[y0!=-1])
-
+		xsize = len(y0[y0==-1]) + 1
 
 		y = y[:,-ysize:]
+		X = X[:,:xsize]
 		X = self.generate(X, max_new_tokens = ysize)[:,-ysize:]
 
 		r = (X == y).flatten().cpu()
