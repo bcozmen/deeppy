@@ -43,15 +43,15 @@ class B_Vae(BaseModel):
 
 		return loss.item(), con_loss.item(), kl_loss.item()
 
+	@torch.no_grad()
 	def test(self, X):
 		X,y = self.ensure(X)
 		
-		with torch.no_grad():
-			y_pred, mu, logvar = self(X)
-		
-			con_loss = self.criterion(y_pred, y)  
-			kl_loss = self.beta * self.kl_loss(mu, logvar)
-			loss = con_loss + kl_loss
+		y_pred, mu, logvar = self(X)
+	
+		con_loss = self.criterion(y_pred, y)  
+		kl_loss = self.beta * self.kl_loss(mu, logvar)
+		loss = con_loss + kl_loss
 
 		return loss.item(), con_loss.item(), kl_loss.item()
 	

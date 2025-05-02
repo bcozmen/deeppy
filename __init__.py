@@ -16,6 +16,7 @@ from deeppy.learn_frame import *
 
 from deeppy.models import *
 from deeppy.data import *
+from deeppy.models.network_utils import PositionalEncoder
 from . import models, data
 
 

@@ -42,7 +42,7 @@ class BaseModel(ABC):
 	@abstractmethod
 	def optimize(self, X):
 		pass
-
+	@torch.no_grad()
 	def test(self, X):
 		pass
 
@@ -135,12 +135,7 @@ class Model(BaseModel):
 	
 	def __call__(self,X):
 		X = self.ensure(X)
-		outs = self.net.forward(X)
-		return outs
-		
-	def __call__(self, X):
-		X = self.ensure(X)
-		outs = self.net.forward(X)
+		outs = self.net(X)
 		return outs
 	
 	def optimize(self, X):

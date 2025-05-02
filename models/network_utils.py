@@ -97,10 +97,13 @@ class LayerGenerator():
 
 			layer = block(inp,out,**args)
 			net.append(layer)
+			if block.__name__ in ["RNN","LSTM", "GRU"]:
+				net.append(recurrent_layer_helper())
+
+
 			
 			#Go for later blocks
 			for block,bargs in zip(blocks[1:], block_args[1:]):
-
 				#If its an activation function
 				if block.__name__ in self.activation_names:
 					if ix == len(layers)-2:
@@ -111,7 +114,6 @@ class LayerGenerator():
 					if self.weight_init is not None:
 						self.init_weights(layer, act)
 					continue
-
 				#If its a batch norm layer:
 				if block.__name__ in nn.modules.batchnorm.__all__:
 					bargs["num_features"] = out
@@ -133,8 +135,7 @@ class LayerGenerator():
 		if len(net) == 0:
 			for block,args in zip(blocks, block_args):
 				net.append(block(**args))
-				if block.__name__ in ["RNN","LSTM", "GRU"]:
-					net.append(recurrent_layer_helper())
+				
 
 
 		return net
@@ -171,3 +172,26 @@ class LayerGenerator():
 
 		if layer.bias is not None and self.weight_init is not None:
 			nn.init.zeros_(layer.bias)
+
+class PositionalEncoder(nn.Module):
+	print_args = classmethod(print_args)
+	dependencies = []
+	def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
+		super().__init__()
+		self.dropout = nn.Dropout(p=dropout)
+
+		position = torch.arange(max_len).unsqueeze(1)
+		div_term = torch.exp(torch.arange(0, d_model, 2) * (-torch.log(torch.tensor(10000.0)) / d_model))
+		pe = torch.zeros(max_len, 1, d_model)
+		pe[:, 0, 0::2] = torch.sin(position * div_term)
+		pe[:, 0, 1::2] = torch.cos(position * div_term)
+		self.register_buffer('pe', pe)
+
+	def forward(self, x):
+		"""
+		Arguments:
+		    x: Tensor, shape ``[seq_len, batch_size, embedding_dim]``
+		"""
+		x = x + self.pe[:x.size(0)]
+		return self.dropout(x)
+

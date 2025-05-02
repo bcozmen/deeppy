@@ -60,7 +60,7 @@ class Metric():
             labels = ["Reward", "Duration"]
         else:
             data = [ [self.train_data, self.test_data]]
-            labels = [ [["Test " +lbl for lbl in self.labels], ["Train " +lbl for lbl in self.labels]]]
+            labels = [ [["Train " +lbl for lbl in self.labels], ["Test " +lbl for lbl in self.labels]]]
         if self.plot_lr:
             data += [self.lrs]
             labels += ["Learning Rate"]
@@ -166,8 +166,10 @@ class LearnFrame():
 
         train = self.model.optimize(X)
         self.metric.train_data.append(train)
-        self.metric.lrs.append(self.model.last_lr()[0])
-
+        try:
+            self.metric.lrs.append(self.model.last_lr()[0])
+        except:
+            pass
         return train
         
 

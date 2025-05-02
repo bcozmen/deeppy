@@ -10,11 +10,17 @@ import warnings
 class FromLoader(Base):
     def __init__(self, train_loader, test_loader = [], valid_loader = [],
                 batch_size = 64):
-        super().__init__(self, batch_size = batch_size)
+        super().__init__(batch_size = batch_size)
 
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.valid_loader = valid_loader
+    def train_data(self):
+        return tuple(next(iter(self.train_loader)))
+    def test_data(self):
+        return tuple(next(iter(self.test_loader)))
+    def valid_data(self):
+        return tuple(next(iter(self.valid_loader)))
     def save(self,file_name):
         warnings.warn("Save for train loader is not possible. Please save your dataset")
 
