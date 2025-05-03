@@ -8,6 +8,69 @@ It embraces a modular approach by decoupling data, algorithms, and neural networ
 
 With the planned integration of XAI tools, Deeppy will offer clearer insights into training processes and model behavior.
 ##
+
+## Train Your Own GPT
+<details>
+	
+<summary>See Code</summary>
+
+### 1 - Configure parameters
+
+```python
+encoding = tiktoken.encoding_for_model("gpt-2")
+
+vocab_size = encoding.n_vocab
+context_size = 64
+embed_dim = 1024
+num_heads = 16
+num_layers = 24
+```
+### 2 - Create Your Dataset
+
+```python
+with open("assets/shakespeare.txt", "r", encoding = "utf-8") as f:
+    text = f.read()
+
+data = GPTText(text=text, tokenizer=encoding, context_size = context_size)
+```
+
+### 3 - Create GPT Model
+
+```python
+GPT_params = {
+    "optimizer_params":Optimizer_params,
+    "vocab_size":vocab_size,
+    "embed_dim":embed_dim,
+    "num_heads":num_heads,
+    "num_layers":num_layers,
+    "context_size":context_size,
+    "device":device,
+    "criterion":nn.CrossEntropyLoss(ignore_index = -1),
+}
+
+model = GPT(**GPT_params)
+```
+
+### 4 - And Finally:
+```python
+lf = LearnFrame(model,data)
+
+for i in range(epoch):
+    lf.optimize()
+    lf.test()
+lf.plot(show_result=True, log=True, save = "GPT.png")
+model.generate("The")
+```
+![](tutorials/assets/GPT.png)
+
+### 5 - 
+</details>
+
+## Or Play a Game
+
+<details>
+<summary>See Code</summary>
+	
 ### 1 - Create Your Dataset
 
 ```python
@@ -52,7 +115,10 @@ lf.get_anim()
 ```python
 lf.save(file_name)
 lf.load(file_name)
-``` 
+```
+
+</details>
+
 For tutorials and examples please see [tutorials](tutorials)
 ###
 # Setup
