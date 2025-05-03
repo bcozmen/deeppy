@@ -7,6 +7,32 @@ import pickle
 import warnings
 
 
+class GPTText(Base):
+    def __init__(self,text, tokenizer, context_size, batch_size = 64, test_size = 0.1):
+        super().__init__(batch_size=batch_size)
+        self.data = tokenizer.encode(text)
+        self.train_size = int((1-test_size) * len(self.data))
+
+        self.train_dataset, self.test_dataset = self.data[:self.train_size], self.data[self.train_size:]
+        self.context_size = context_size
+    def train_data(self):
+        ix = torch.randint(len(self.train_dataset) - self.context_size, (self.batch_size,))
+        x = torch.stack([torch.tensor(self.train_dataset[i: i+self.context_size]) for i in ix])
+        y = torch.stack([torch.tensor(self.train_dataset[i+1 : i+1+self.context_size]) for i in ix])
+
+        return x,y
+    def test_data(self):
+        ix = torch.randint(len(self.test_dataset) - self.context_size, (self.batch_size,))
+        x = torch.stack([torch.tensor(self.test_dataset[i: i+self.context_size]) for i in ix])
+        y = torch.stack([torch.tensor(self.test_dataset[i+1 : i+1+self.context_size]) for i in ix])
+
+        return x,y
+
+    def load(self):
+        pass
+    def save(self):
+        pass
+
 class FromLoader(Base):
     def __init__(self, train_loader, test_loader = [], valid_loader = [],
                 batch_size = 64):

@@ -1,5 +1,4 @@
-from .dataset import DataGetter,Data, FromLoader
+from .dataset import DataGetter,Data, FromLoader, GPTText
 from .envdata import EnvData
-from .gpt_dataset import 
 
 algorithms = ["DataGetter", "EnvData", "FromLoader"]

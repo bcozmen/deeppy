@@ -23,12 +23,12 @@ class GPT(BaseModel):
 	dependencies = []
 	optimize_return_labels = ["Loss"]
 	test_return_labels = ["Accuracy"]
-	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, max_seq_len=11, device = None, criterion = nn.CrossEntropyLoss()):
+	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, context_size=11, device = None, criterion = nn.CrossEntropyLoss()):
 		super().__init__(device = device, criterion=criterion)
 
 		self.vocab_size = vocab_size
 		self.embed_dim = embed_dim
-		self.max_seq_len = max_seq_len
+		self.context_size = context_size
 		self.num_heads = num_heads
 		self.num_layers = num_layers
 
@@ -42,7 +42,7 @@ class GPT(BaseModel):
 					"embedding_dim" : embed_dim,
 				},
 				{
-					"num_embeddings" : max_seq_len,
+					"num_embeddings" : context_size,
 					"embedding_dim" : embed_dim
 				},
 				{
@@ -104,7 +104,7 @@ class GPT(BaseModel):
 	def generate(self, X, max_new_tokens, temperature=1.0, do_sample=False, top_k=None):
 		X = self.ensure(X)
 		for _ in range(max_new_tokens):
-			X = X if X.size(1) <= self.max_seq_len else X[:, -self.max_seq_len:]
+			X = X if X.size(1) <= self.context_size else X[:, -self.context_size:]
 			
 			logits = self(X)
 			logits = logits[:, -1, :] / temperature
@@ -123,4 +123,4 @@ class GPT(BaseModel):
 			# append sampled index to the running sequence and continue
 			X = torch.cat((X, X_next), dim=1)
 
-		return X
+		return X.cpu()
