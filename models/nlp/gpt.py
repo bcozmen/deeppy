@@ -123,4 +123,4 @@ class GPT(BaseModel):
 			# append sampled index to the running sequence and continue
 			X = torch.cat((X, X_next), dim=1)
 
-		return X.cpu()
+		return X
