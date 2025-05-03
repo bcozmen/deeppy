@@ -91,8 +91,6 @@ class GPT(BaseModel):
 		outs = self(X)
 
 		loss = self.criterion(outs.view(-1, outs.size(-1)),y.view(-1))
-		self.net.back_propagate(loss)
-
 		return loss.item()
 
 	@torch.no_grad()
