@@ -22,7 +22,7 @@ class GPTPositionalEncoder(nn.Module):
 class GPT(BaseModel):
 	dependencies = []
 	optimize_return_labels = ["Loss"]
-	test_return_labels = ["Accuracy"]
+	#test_return_labels = ["Accuracy"]
 	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, context_size=11, device = None, criterion = nn.CrossEntropyLoss()):
 		super().__init__(device = device, criterion=criterion)
 
@@ -87,18 +87,13 @@ class GPT(BaseModel):
 		return loss.item()
 	@torch.no_grad()
 	def test(self, X):
-		X,y = self.ensure(X)
+		X,y = self.ensure(X)  
+		outs = self(X)
 
-		y0 = y[0]
-		ysize = len(y0[y0!=-1])
-		xsize = len(y0[y0==-1]) + 1
+		loss = self.criterion(outs.view(-1, outs.size(-1)),y.view(-1))
+		self.net.back_propagate(loss)
 
-		y = y[:,-ysize:]
-		X = X[:,:xsize]
-		X = self.generate(X, max_new_tokens = ysize)[:,-ysize:]
-
-		r = (X == y).flatten().cpu()
-		return r.sum() / len(r)
+		return loss.item()
 
 	@torch.no_grad()
 	def generate(self, X, max_new_tokens, temperature=1.0, do_sample=False, top_k=None):
