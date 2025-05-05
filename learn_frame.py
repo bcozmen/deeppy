@@ -190,9 +190,10 @@ class LearnFrame():
             test = self.model.test(X)
             self.metric.test_data.append(test)
 
-    def save(self, file_name):
+    def save(self, file_name, save_data = True):
         self.data.save(file_name)
-        self.model.save(file_name)
+        if save_data:
+            self.model.save(file_name)
 
         with open(file_name + "/data.pkl", 'wb') as f:
             pickle.dump({

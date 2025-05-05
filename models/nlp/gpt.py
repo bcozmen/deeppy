@@ -69,6 +69,7 @@ class GPT(BaseModel):
 		}
 
 		self.net = Network(**network_params).to(self.device)
+		self.nets = [net]
 		self.train()
 	
 	def init_objects():
