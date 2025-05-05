@@ -56,7 +56,9 @@ lf.plot(show_result=True, log=True)
 ```python
 model.generate("On this very beautiful day, let us")
 ```
-
+On this very beautiful day, let us,
+And I'll not be the king,
+And I am a man
 </details>
 
 ## Or Play a Game
