@@ -19,6 +19,16 @@ class GPTPositionalEncoder(nn.Module):
 		pos = torch.arange(0, t, dtype=torch.long, device = x.device).unsqueeze(0) 
 		return x + self.embed(pos)
 
+
+class MaskedTransformerEncoderLayer(nn.Module):
+	def __init__(self, **kwargs):
+		self.encoder = nn.TransformerEncoderLayer(**kwargs)
+
+	def forward(self, x):
+		sz = x.shape[0]
+		mask = torch.log(torch.tril(torch.ones(sz,sz))).to(x.device)
+		return self.encoder(x,mask = mask)
+
 class GPT(BaseModel):
 	dependencies = []
 	optimize_return_labels = ["Loss"]
@@ -32,7 +42,7 @@ class GPT(BaseModel):
 		self.num_heads = num_heads
 		self.num_layers = num_layers
 
-		encoder = nn.TransformerEncoderLayer(d_model = embed_dim, nhead= num_heads, dim_feedforward = embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True)
+		encoder = nn.MaskedTransformerEncoderLayer(d_model = embed_dim, nhead= num_heads, dim_feedforward = embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True)
 
 		arch_params = {
 			"blocks":[nn.Embedding, GPTPositionalEncoder, nn.Dropout,nn.TransformerEncoder, nn.LayerNorm, nn.Linear],
