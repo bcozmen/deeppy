@@ -14,27 +14,18 @@ With the planned integration of XAI tools, Deeppy will offer clearer insights in
 	
 <summary>See Code</summary>
 
-### 1 - Configure parameters
 
-```python
-encoding = tiktoken.encoding_for_model("gpt-2")
-
-vocab_size = encoding.n_vocab
-context_size = 64
-embed_dim = 1024
-num_heads = 16
-num_layers = 24
-```
-### 2 - Create Your Dataset
+### 1 - Create Your Dataset
 
 ```python
 with open("assets/shakespeare.txt", "r", encoding = "utf-8") as f:
     text = f.read()
 
+encoding = tiktoken.encoding_for_model("gpt-2")
 data = GPTText(text=text, tokenizer=encoding, context_size = context_size)
 ```
 
-### 3 - Create GPT Model
+### 2 - Create a GPT Model
 
 ```python
 GPT_params = {
@@ -50,20 +41,22 @@ GPT_params = {
 
 model = GPT(**GPT_params)
 ```
-
-### 4 - And Finally:
+Total parameters : 28.895232 Million
+### 3 - And Finally:
 ```python
 lf = LearnFrame(model,data)
 
 for i in range(epoch):
     lf.optimize()
-    lf.test()
-lf.plot(show_result=True, log=True, save = "GPT.png")
-model.generate("The")
+lf.plot(show_result=True, log=True)
 ```
 ![](tutorials/assets/GPT.png)
 
-### 5 - 
+### 4 - And Generate New Text
+```python
+model.generate("On this very beautiful day, let us")
+```
+
 </details>
 
 ## Or Play a Game
