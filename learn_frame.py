@@ -34,6 +34,7 @@ class Metric():
         self.train_labels = train_labels
         self.test_labels = test_labels
         self.train_data,self.test_data = [], []
+        self.train_data_ix,self.test_data_ix = [], []
 
         self.reward, self.duration = 0,0
         self.duration_data, self.reward_data = [],[]
@@ -121,7 +122,7 @@ class Metric():
 class LearnFrame():
     print_args = classmethod(print_args)
     def __init__(self, model, data):
-        
+        self.optim_epoch = 0
         self.model=model
         self.return_labels = self.model.optimize_return_labels
 
@@ -163,15 +164,18 @@ class LearnFrame():
         loss
             Loss objects (shape depends on the algorithm)
         """
+
         self.model.train()
         X = self.data.train_data()
 
         #For RL models, if start_size is not reached
         if X is None:
             return None
-
+        
         train = self.model.optimize(X)
         self.metric.train_data.append(train)
+        self.metric.train_data_ix.append(self.optim_epoch)
+        self.optim_epoch += 1
         try:
             self.metric.lrs.append(self.model.last_lr()[0])
         except:
@@ -189,6 +193,7 @@ class LearnFrame():
             X = self.data.test_data()
             test = self.model.test(X)
             self.metric.test_data.append(test)
+            self.metric.test_data_ix.append(self.optim_epoch)
 
     def save(self, file_name, save_data = True):
         self.data.save(file_name)

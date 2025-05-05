@@ -20,12 +20,14 @@ class GPTPositionalEncoder(nn.Module):
 		return x + self.embed(pos)
 
 
-class MaskedTransformerEncoderLayer(nn.Module):
+class MaskedTransformerEncoder(nn.Module):
 	def __init__(self, **kwargs):
-		self.encoder = nn.TransformerEncoderLayer(**kwargs)
+		super().__init__()
+		self.encoder = nn.TransformerEncoder(**kwargs)
+
 
 	def forward(self, x):
-		sz = x.shape[0]
+		sz = x.shape[1]
 		mask = torch.log(torch.tril(torch.ones(sz,sz))).to(x.device)
 		return self.encoder(x,mask = mask)
 
@@ -42,10 +44,10 @@ class GPT(BaseModel):
 		self.num_heads = num_heads
 		self.num_layers = num_layers
 
-		encoder = nn.MaskedTransformerEncoderLayer(d_model = embed_dim, nhead= num_heads, dim_feedforward = embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True)
+		encoder = nn.TransformerEncoderLayer(d_model = embed_dim, nhead= num_heads, dim_feedforward = embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True)
 
 		arch_params = {
-			"blocks":[nn.Embedding, GPTPositionalEncoder, nn.Dropout,nn.TransformerEncoder, nn.LayerNorm, nn.Linear],
+			"blocks":[nn.Embedding, GPTPositionalEncoder, nn.Dropout,MaskedTransformerEncoder, nn.LayerNorm, nn.Linear],
 			"block_args":[
 				{
 					"num_embeddings": vocab_size,
@@ -79,7 +81,7 @@ class GPT(BaseModel):
 		}
 
 		self.net = Network(**network_params).to(self.device)
-		self.nets = [net]
+		self.nets = [self.net]
 		self.train()
 	
 	def init_objects():
@@ -107,10 +109,11 @@ class GPT(BaseModel):
 	@torch.no_grad()
 	def generate(self, X, max_new_tokens, temperature=1.0, do_sample=False, top_k=None):
 		X = self.ensure(X)
+
 		for _ in range(max_new_tokens):
-			X = X if X.size(1) <= self.context_size else X[:, -self.context_size:]
+			X_running = X if X.size(1) <= self.context_size else X[:, -self.context_size:]
 			
-			logits = self(X)
+			logits = self(X_running)
 			logits = logits[:, -1, :] / temperature
 			
 			# optionally crop the logits to only the top k options
