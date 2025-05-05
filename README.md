@@ -54,13 +54,30 @@ lf.plot(show_result=True, log=True)
 
 ### 4 - And Generate New Text
 ```python
-model.generate("On this very beautiful day, let us")
+model.generate("KING RICHARD III: \n On this very beautiful day, let us")
 ```
-On this very beautiful day, let us,
+KING RICHARD III: 
 
-And I'll not be the king,
+ On this very beautiful day, let us us hear
+ 
+The way of the king.
 
-And I am a man
+
+DUKE OF YORK::
+
+I will not be avoided'd with my heart.
+
+DUKEKE VINCENTIO:
+
+I thank you, good father.
+
+LLUCIO:
+
+I thank you, good my lord; I'll to your your daughter.
+
+KING EDWARD IV:
+
+Now, by the jealous queen
 </details>
 
 ## Or Play a Game
