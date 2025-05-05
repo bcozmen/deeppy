@@ -12,7 +12,7 @@ With the planned integration of XAI tools, Deeppy will offer clearer insights in
 ## Train Your Own GPT
 <details>
 	
-<summary>See Code</summary>
+<summary>See Demo</summary>
 
 
 ### 1 - Create Your Dataset
@@ -66,7 +66,7 @@ And I am a man
 ## Or Play a Game
 
 <details>
-<summary>See Code</summary>
+<summary>See Demo</summary>
 	
 ### 1 - Create Your Dataset
 
