@@ -176,6 +176,20 @@ For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutoria
 </details> 
 </details>
 
+### Computer Vision
+<details>
+[SANE](models/cv/sane.py)
+<details>
+<summary>Papers</summary>
+	               - https://arxiv.org/html/2406.09997v1#bib.bib39
+</details> 
+[NeRF](models/cv/nerf.py)
+<details>
+<summary>Papers</summary>
+	               - https://arxiv.org/pdf/2003.08934
+</details> 
+</details>
+
 ### Auto-Encoder
 
 <details>
