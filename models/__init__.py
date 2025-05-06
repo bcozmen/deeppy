@@ -1,5 +1,5 @@
-from .base_model import BaseModel, Model
-from .network import Network
+from .base_model import *
+from .network import *
 from . import rl, autoencoder,nlp,cv
 from .network_utils import *
 

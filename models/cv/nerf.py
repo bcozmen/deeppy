@@ -1,3 +1,4 @@
+#https://arxiv.org/pdf/2003.08934
 import types
 
 import torch
@@ -6,7 +7,7 @@ import torch.nn as nn
 from deeppy.models.base_model import BaseModel
 from deeppy.models.network import Network
 
-class Netf(BaseModel):
+class Nerf(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
 	optimize_return_labels = ["Loss coarse", "Loss fine"]

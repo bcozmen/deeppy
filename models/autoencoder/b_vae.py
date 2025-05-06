@@ -31,6 +31,14 @@ class B_Vae(BaseModel):
 
 		return y_pred, mu, logvar
 
+	def encode(self,X):
+		X = self.ensure(X)
+		return self.net.encode(X)
+
+	def decode(self,X):
+		X = self.ensure(X)
+		return self.net.decode(X)
+
 	
 	def optimize(self, X):
 		X,y = self.ensure(X)

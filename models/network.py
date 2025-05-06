@@ -4,19 +4,6 @@ import torch.nn as nn
 from deeppy.utils import print_args
 from deeppy.models.network_utils import LayerGenerator, Optimizer
 
-@torch.compile
-
-
-def my_decorator(cls):
-    try:
-    	cls = torch.compile(cls)
-    except:
-    	pass
-    return cls  # Just return the class unchanged
-    print(f"Applying decorator to {cls.__name__}")
-    # Modify class if needed
-    cls.decorated = True
-    return cls
 
 class Network(nn.Module):
 	print_args = classmethod(print_args)
@@ -27,6 +14,8 @@ class Network(nn.Module):
 		self.task = task
 		if isinstance(arch_params, dict):
 			arch_params = [arch_params]
+		if isinstance(decoder_params, dict):
+			decoder_params = [decoder_params]
 		self.arch_params = arch_params
 		self.decoder_params = decoder_params
 
@@ -99,5 +88,40 @@ class Network(nn.Module):
 
 
 	
+class OrderedPositionalEmbedding(nn.Module):
+	print_args = classmethod(print_args)
+	dependencies = []
+	def __init__(self, num_embeddings, embedding_dim):
+		super().__init__()
+		self.embed = nn.Embedding(num_embeddings,embedding_dim)
 
+	def forward(self,x):
+		t = x.shape[1]
+		pos = torch.arange(0, t, dtype=torch.long, device = x.device).unsqueeze(0) 
+		return x + self.embed(pos)
+
+
+
+class PositionalEmbedding(nn.Module):
+	print_args = classmethod(print_args)
+	dependencies = []
+	def __init__(self, num_embeddings, embedding_dim):
+		super().__init__()
+		self.embed = nn.Embedding(num_embeddings,embedding_dim)
+
+	def forward(self,x):
+		t = x.shape[1]
+		pos = torch.arange(0, t, dtype=torch.long, device = x.device).unsqueeze(0) 
+		return x + self.embed(pos)
+
+
+
+class MaskedTransformerEncoder(nn.Module):
+	def __init__(self, **kwargs):
+		super().__init__()
+		self.encoder = nn.TransformerEncoder(**kwargs)
+	def forward(self, x):
+		sz = x.shape[1]
+		mask = torch.log(torch.tril(torch.ones(sz,sz))).to(x.device)
+		return self.encoder(x,mask = mask)
 

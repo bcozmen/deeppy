@@ -1,41 +1,16 @@
 import torch
 import torch.nn as nn
 
-
-
-from deeppy.utils import print_args
-from deeppy.models.network import Network
+from deeppy.models.network import Network, OrderedPositionalEmbedding, MaskedTransformerEncoder
 from deeppy.models.base_model import BaseModel
 
-class GPTPositionalEncoder(nn.Module):
-	print_args = classmethod(print_args)
-	dependencies = []
-	def __init__(self, num_embeddings, embedding_dim):
-		super().__init__()
-		self.embed = nn.Embedding(num_embeddings,embedding_dim)
 
-	def forward(self,x):
-		t = x.shape[1]
-		pos = torch.arange(0, t, dtype=torch.long, device = x.device).unsqueeze(0) 
-		return x + self.embed(pos)
-
-
-class MaskedTransformerEncoder(nn.Module):
-	def __init__(self, **kwargs):
-		super().__init__()
-		self.encoder = nn.TransformerEncoder(**kwargs)
-
-
-	def forward(self, x):
-		sz = x.shape[1]
-		mask = torch.log(torch.tril(torch.ones(sz,sz))).to(x.device)
-		return self.encoder(x,mask = mask)
 
 class GPT(BaseModel):
-	dependencies = []
+	dependencies = [Network]
 	optimize_return_labels = ["Loss"]
 	#test_return_labels = ["Accuracy"]
-	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, context_size=11, device = None, criterion = nn.CrossEntropyLoss()):
+	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, context_size=11, dropout = 0.1, device = None, criterion = nn.CrossEntropyLoss()):
 		super().__init__(device = device, criterion=criterion)
 
 		self.vocab_size = vocab_size
@@ -43,45 +18,15 @@ class GPT(BaseModel):
 		self.context_size = context_size
 		self.num_heads = num_heads
 		self.num_layers = num_layers
+		self.optimizer_params = optimizer_params
+		self.dropout = dropout
 
-		encoder = nn.TransformerEncoderLayer(d_model = embed_dim, nhead= num_heads, dim_feedforward = embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True)
-
-		arch_params = {
-			"blocks":[nn.Embedding, GPTPositionalEncoder, nn.Dropout,MaskedTransformerEncoder, nn.LayerNorm, nn.Linear],
-			"block_args":[
-				{
-					"num_embeddings": vocab_size,
-					"embedding_dim" : embed_dim,
-				},
-				{
-					"num_embeddings" : context_size,
-					"embedding_dim" : embed_dim
-				},
-				{
-					"p":0.1
-				},
-				{
-					"encoder_layer":encoder,
-					"num_layers":num_layers,
-				},
-				{
-					"normalized_shape" : embed_dim
-				},
-				{
-					"in_features" : embed_dim,
-					"out_features":vocab_size,
-					"bias":False
-				}
-			],
-		}
-
-		network_params = {
-			"arch_params":arch_params,
-			"optimizer_params":optimizer_params,
-		}
-
+		network_params = self.build_transformer()
 		self.net = Network(**network_params).to(self.device)
+		
 		self.nets = [self.net]
+		self.params = [network_params]
+		self.objects = [criterion]
 		self.train()
 	
 	def init_objects():
@@ -131,3 +76,41 @@ class GPT(BaseModel):
 			X = torch.cat((X, X_next), dim=1)
 
 		return X
+
+
+	def build_transformer(self):
+		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = self.embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True, dropout=self.dropout)
+
+		arch_params = {
+			"blocks":[nn.Embedding, OrderedPositionalEmbedding, nn.Dropout,MaskedTransformerEncoder, nn.LayerNorm, nn.Linear],
+			"block_args":[
+				{
+					"num_embeddings": self.vocab_size,
+					"embedding_dim" : self.embed_dim,
+				},
+				{
+					"num_embeddings" : self.context_size,
+					"embedding_dim" : self.embed_dim
+				},
+				{
+					"p":self.dropout
+				},
+				{
+					"encoder_layer":encoder,
+					"num_layers":self.num_layers,
+				},
+				{
+					"normalized_shape" : self.embed_dim
+				},
+				{
+					"in_features" : self.embed_dim,
+					"out_features":self.vocab_size,
+					"bias":False
+				}
+			],
+		}
+
+		return {
+			"arch_params":arch_params,
+			"optimizer_params":self.optimizer_params,
+		}
