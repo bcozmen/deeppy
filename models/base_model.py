@@ -54,6 +54,8 @@ class BaseModel(ABC):
 		self.training = False
 	
 	def ensure_tensor_device(self, X):
+		if X is None:
+			return X
 		if not torch.is_tensor(X):
 			X = torch.tensor(X)  # Convert to tensor
 		if X.device != self.device:

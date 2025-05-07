@@ -8,7 +8,7 @@ from deeppy.models.network_utils import LayerGenerator, Optimizer
 class Network(nn.Module):
 	print_args = classmethod(print_args)
 	dependencies = [LayerGenerator, Optimizer]
-	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = {}):
+	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = None):
 		super(Network, self).__init__()
 
 		self.task = task
@@ -23,7 +23,8 @@ class Network(nn.Module):
 		self.generate()
 
 		self.optimizer_params = optimizer_params
-		self.optimizer = Optimizer(self.model, **self.optimizer_params)
+		if self.optimizer_params is not None:
+			self.optimizer = Optimizer(self.model, **self.optimizer_params)
 		
 	def save_states(self):
 		return {
@@ -88,40 +89,5 @@ class Network(nn.Module):
 
 
 	
-class OrderedPositionalEmbedding(nn.Module):
-	print_args = classmethod(print_args)
-	dependencies = []
-	def __init__(self, num_embeddings, embedding_dim):
-		super().__init__()
-		self.embed = nn.Embedding(num_embeddings,embedding_dim)
 
-	def forward(self,x):
-		t = x.shape[1]
-		pos = torch.arange(0, t, dtype=torch.long, device = x.device).unsqueeze(0) 
-		return x + self.embed(pos)
-
-
-
-class PositionalEmbedding(nn.Module):
-	print_args = classmethod(print_args)
-	dependencies = []
-	def __init__(self, num_embeddings, embedding_dim):
-		super().__init__()
-		self.embed = nn.Embedding(num_embeddings,embedding_dim)
-
-	def forward(self,x):
-		t = x.shape[1]
-		pos = torch.arange(0, t, dtype=torch.long, device = x.device).unsqueeze(0) 
-		return x + self.embed(pos)
-
-
-
-class MaskedTransformerEncoder(nn.Module):
-	def __init__(self, **kwargs):
-		super().__init__()
-		self.encoder = nn.TransformerEncoder(**kwargs)
-	def forward(self, x):
-		sz = x.shape[1]
-		mask = torch.log(torch.tril(torch.ones(sz,sz))).to(x.device)
-		return self.encoder(x,mask = mask)
 

@@ -6,85 +6,157 @@ import torch.nn as nn
 
 from deeppy.utils import print_args
 
-from deeppy.models.network import Network, OrderedPositionalEmbedding, MaskedTransformerEncoder
+from deeppy.models.network import Network
+from deeppy.modules.positional_embedding import SanePositionalEmbedding
+from deeppy.modules.input_transform import SqueezeLastDimention
+from deeppy.modules.loss import NTXentLoss, NT_Xent
 from deeppy.models.base_model import BaseModel
 
-class DummyPositionalEmbedding(nn.Module):
-	print_args = classmethod(print_args)
-	dependencies = []
-	def __init__(self, num_embeddings, embedding_dim):
-		super().__init__()
 
-	def forward(self,x):
-		t = x.shape[:2]  + (2,)
-		pos = torch.rand(t) 
-		return torch.cat((x,pos), dim=2)
+
+def parse_input(func):
+	def wrapper(self,X):
+		if len(X) == 2:
+			X = X + (None,)
+		return func(self,X)
+	return wrapper
 
 class Sane(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
-	optimize_return_labels = []
+	optimize_return_labels = ["Loss"]
 
-	def __init__(self, optimizer_params, vocab_size = 289, embed_dim=1024, latent_dim = 128, num_heads=4, num_layers=4, context_size=50, dropout = 0.1, device = None, criterion = nn.MSELoss()):
+	def __init__(self, optimizer_params, max_positions, 
+		input_dim= 201, latent_dim = 128, projection_dim = 30,
+		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
+		device = None, gamma = 0.5, ntx_temp = 0.1):
 
-		super().__init__(device= device, criterion = criterion)
+		super().__init__(device= device)
+
+		#Init Loss function
+		self.ntx_temp = ntx_temp
+		self.recon_crit = nn.MSELoss()
+		self.ntx_crit = NT_Xent(temp = ntx_temp)
+		self.gamma = gamma
+
 		#Transformer parameters
-		self.vocab_size = vocab_size
+		self.max_positions = max_positions
+		self.input_dim = input_dim
 		self.embed_dim = embed_dim
 		self.context_size = context_size
 		self.num_heads = num_heads
 		self.num_layers = num_layers
 		self.dropout = dropout
+		self.bias = bias
+		self.projection_dim = projection_dim
 		
 		#Autoencoder
 		self.latent_dim = latent_dim
 		self.optimizer_params = optimizer_params
 
-		network_params = self.build_transformer()
-		self.net = Network(**network_params).to(self.device)
+		#Create Networks
+		self.autoencoder, self.autoencoder_params = self.build_autoencoder()
+		self.project , self.project_params = self.build_projection_head()
 		
-		self.nets = [self.net]
-		self.params = [network_params]
-		self.objects = [criterion]
+		
+		self.nets = [self.autoencoder, self.project]
+		self.params = [self.autoencoder_params, self.project_params]
+		self.objects = [self.recon_crit, self.ntx_crit]
 		self.train()
 	
 	
 	def init_objects(self):
-		pass	
+		self.recon_crit, self.ntx_crit = self.objects	
 
+	@parse_input
 	def __call__(self, X):
-		X = self.ensure(X)
-		return self.net(X)
-	def encode(self,X):
-		X = self.ensure(X)
-		return self.net.encode(X)
-	def decode(self,X):
-		X = self.ensure(X)
-		return self.net.decode(X)
+		X,p,m = self.ensure(X)
 
+		z = self.encode((X,p,m))
+		zp = self.project(z)
+		y = self.decode((z,p,m))
+		return z, y, zp
+	@parse_input
+	def encode(self,X):
+		X,p,m = self.ensure(X)
+		
+		X = self.autoencoder.model[0](X)
+		X = self.autoencoder.model[1](X,p)
+		X = self.autoencoder.model[2](X)
+		X = self.autoencoder.model[3](X,m)
+		X = self.autoencoder.model[4](X)
+		return X
+	@parse_input
+	def decode(self,X):
+		X,p,m = self.ensure(X)
+
+		X = self.autoencoder.model[5](X)
+		X = self.autoencoder.model[6](X,p)
+		X = self.autoencoder.model[7](X)
+		X = self.autoencoder.model[8](X,m)
+		X = self.autoencoder.model[9](X)
+
+		return X
+
+
+	def embed(self,X):
+		return torch.mean(self.encode(X), dim=1)
 
 	def optimize(self, X):
-		X,y = self.ensure(X)
+		x_i, p_i,m_i, x_j, p_j,m_j = self.ensure(X)
 
+		z_i, y_i, zp_i = self((x_i, p_i))
+		z_j, y_j, zp_j = self((x_j, p_j))
+		# cat y_i, y_j and x_i, x_j, and m_i, m_j
+		x = torch.cat([x_i, x_j], dim=0)
+		y = torch.cat([y_i, y_j], dim=0)
+		m = torch.cat([m_i, m_j], dim=0)
+		# compute loss
+
+		recon_loss = self.recon_crit(y*m,x)
+		ntx_loss = self.ntx_crit(zp_i, zp_j)
 		
+		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
 
+		for net in self.nets:
+			net.optimizer.optimizer.zero_grad()
+		loss.backward()
+		for net in self.nets:
+			net.back_propagate(loss=None)
+
+		return loss
+		
+	@torch.no_grad()
 	def test(self, X):
-		X,y = self.ensure(X)
+		x_i, p_i,m_i, x_j, p_j,m_j = self.ensure(X)
 
-	def build_transformer(self):
-		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, batch_first= True, norm_first = True, dropout=self.dropout)
-		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, batch_first= True, norm_first = True, dropout=self.dropout)
+		z_i, y_i, zp_i = self((x_i, p_i))
+		z_j, y_j, zp_j = self((x_j, p_j))
+		# cat y_i, y_j and x_i, x_j, and m_i, m_j
+		x = torch.cat([x_i, x_j], dim=0)
+		y = torch.cat([y_i, y_j], dim=0)
+		m = torch.cat([m_i, m_j], dim=0)
+		# compute loss
+
+		recon_loss = self.recon_crit(y*m,x)
+		ntx_loss = self.ntx_crit(zp_i, zp_j)
+		
+		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
+		return loss
+	def build_autoencoder(self):
+		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
+		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		
 		encoder_params = {
-			"blocks":[nn.Linear,DummyPositionalEmbedding, nn.Dropout, MaskedTransformerEncoder, nn.Linear],
+			"blocks":[nn.Linear,SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
 			"block_args":[
 				{
-					"in_features": self.vocab_size,
-					"out_features" : self.embed_dim - 2,
+					"in_features": self.input_dim,
+					"out_features" : self.embed_dim,
 				},
 				{
-					"num_embeddings" : self.embed_dim ,
-					"embedding_dim" : self.vocab_size ,
+					"max_positions" : self.max_positions,
+					"embed_dim" : self.embed_dim
 				},
 				{
 					"p" : self.dropout
@@ -101,14 +173,15 @@ class Sane(BaseModel):
 		}
 
 		decoder_params = {
-			"blocks":[nn.Linear, DummyPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
+			"blocks":[nn.Linear, SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
 			"block_args":[
 				{
 					"in_features": self.latent_dim,
-					"out_features" : self.embed_dim-2,
+					"out_features" : self.embed_dim,
 				},
-				{	"num_embeddings" : self.embed_dim ,
-					"embedding_dim" : self.vocab_size ,
+				{
+					"max_positions" : self.max_positions,
+					"embed_dim" : self.embed_dim
 				},
 				{
 					"p" : self.dropout
@@ -119,16 +192,34 @@ class Sane(BaseModel):
 				},
 				{
 					"in_features" : self.embed_dim,
-					"out_features":self.vocab_size,
+					"out_features":self.input_dim,
 				}
 			],
 		}
 
-		return {
+		network_params = {
 			"arch_params": encoder_params,
 			"decoder_params" : decoder_params,
 			"task" : "autoencoder",
 			"optimizer_params":self.optimizer_params,
 		}	
-		
-		
+
+		return Network(**network_params).to(self.device), network_params
+	def build_projection_head(self):
+		arch_params1 = {
+			"blocks":[SqueezeLastDimention],
+		}
+		arch_params2 = {
+			"layers":[self.latent_dim * self.context_size, self.projection_dim, self.projection_dim],
+			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
+			"block_args":[{"bias" : self.bias}, {"normalized_shape":self.projection_dim}],
+			"out_act": nn.ReLU,
+			"out_params":{},
+			"weight_init":"uniform",
+		}
+
+		network_params = {
+			"arch_params": [arch_params1, arch_params2],
+			"optimizer_params":self.optimizer_params,
+		}
+		return Network(**network_params).to(self.device), network_params
