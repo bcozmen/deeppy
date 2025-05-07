@@ -6,11 +6,8 @@ import torch.nn as nn
 
 from deeppy.utils import print_args
 
-from deeppy.modules.network import Network
-from deeppy.modules.positional_embedding import SanePositionalEmbedding
-from deeppy.modules.input_transform import SqueezeLastDimention
-from deeppy.modules.loss import NTXentLoss, NT_Xent
-from deeppy.models.base_model import BaseModel
+from deeppy import Network, SanePositionalEmbedding, SqueezeLastDimention, NTXentLoss, NT_Xent
+from deeppy.models import BaseModel
 
 
 

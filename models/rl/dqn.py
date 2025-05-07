@@ -3,8 +3,8 @@ import torch.nn as nn
 
 
 from deeppy.models.rl.rl_utils import Epsilon, TargetUpdater
-from deeppy.modules.network import Network
-from deeppy.models.base_model import BaseModel
+from deeppy import Network
+from deeppy.models import BaseModel
 
 class DQN(BaseModel):
     dependencies = [Network, Epsilon, TargetUpdater]

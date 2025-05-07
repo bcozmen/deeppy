@@ -1,10 +1,8 @@
 import torch
 import torch.nn as nn
 
-from deeppy.modules.network import Network
-from deeppy.modules.positional_embedding import OrderedPositionalEmbedding
-from deeppy.modules.transformer import MaskedTransformerEncoder
-from deeppy.models.base_model import BaseModel
+from deeppy import Network, OrderedPositionalEmbedding, MaskedTransformerEncoder
+from deeppy.models import BaseModel
 
 
 
