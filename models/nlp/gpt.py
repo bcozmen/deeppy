@@ -90,10 +90,6 @@ class GPT(BaseModel):
 		decay_params_n = [n for n, p in param_dict.items() if p.dim() >= 2]
 		nodecay_params_n = [n for n, p in param_dict.items() if p.dim() < 2]
 
-		print(decay_params_n)
-
-		print(nodecay_params_n)
-
 		optim_groups = [
 			{"params": decay_params, "weight_decay": self.optimizer_params["optimizer_args"]["weight_decay"]},
 			{"params": nodecay_params, "weight_decay": 0.0},
