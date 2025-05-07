@@ -1,11 +1,8 @@
 import torch
 import torch.nn as nn
 
-from deeppy.utils import print_args
 
 class OrderedPositionalEmbedding(nn.Module):
-    print_args = classmethod(print_args)
-    dependencies = []
     def __init__(self, num_embeddings, embedding_dim):
         super().__init__()
         self.embed = nn.Embedding(num_embeddings,embedding_dim)

@@ -5,7 +5,7 @@ import torch.optim as optim
 import copy
 
 
-from deeppy.models.network import Network
+from deeppy.modules.network import Network
 from deeppy.models.base_model import BaseModel
 
 from deeppy.models.rl.dqn import DDQN

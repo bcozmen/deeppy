@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from deeppy.utils import print_args
-
 class NT_Xent(nn.Module):
     def __init__(self, temp):
         super(NT_Xent, self).__init__()

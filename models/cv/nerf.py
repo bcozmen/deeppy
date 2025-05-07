@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from deeppy.models.base_model import BaseModel
-from deeppy.models.network import Network
+from deeppy.modules.network import Network
 
 class Nerf(BaseModel):
 	#kwargs = device, criterion

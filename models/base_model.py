@@ -4,7 +4,7 @@ import torch.nn as nn
 from abc import ABC, abstractmethod
 
 from deeppy.utils import print_args
-from deeppy.models.network import Network
+from deeppy.modules.network import Network
 
 
 class BaseModel(ABC):

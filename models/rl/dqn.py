@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 from deeppy.models.rl.rl_utils import Epsilon, TargetUpdater
-from deeppy.models.network import Network
+from deeppy.modules.network import Network
 from deeppy.models.base_model import BaseModel
 
 class DQN(BaseModel):

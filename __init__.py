@@ -17,7 +17,7 @@ from deeppy.learn_frame import *
 from deeppy.modules import *
 from deeppy.models import *
 from deeppy.data import *
-from . import models, data
+from . import models, data, modules
 
 
 

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from deeppy.utils import print_args
-from deeppy.models.network_utils import LayerGenerator, Optimizer
+from deeppy.modules.network_utils import LayerGenerator, Optimizer
 
 
 class Network(nn.Module):

@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from deeppy.utils import print_args
 
-from deeppy.models.network import Network
+from deeppy.modules.network import Network
 from deeppy.modules.positional_embedding import SanePositionalEmbedding
 from deeppy.modules.input_transform import SqueezeLastDimention
 from deeppy.modules.loss import NTXentLoss, NT_Xent
@@ -23,7 +23,7 @@ def parse_input(func):
 
 class Sane(BaseModel):
 	#kwargs = device, criterion
-	dependencies = [Network]
+	dependencies = []
 	optimize_return_labels = ["Loss"]
 
 	def __init__(self, optimizer_params, max_positions, 
