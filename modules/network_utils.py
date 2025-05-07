@@ -17,9 +17,19 @@ class Optimizer():
 	print_args = classmethod(print_args)
 	dependencies = [Scheduler]
 
-	def __init__(self,model, optimizer = optim.AdamW, optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
-		self.model = model
-		self.optimizer = optimizer(self.model.parameters() , **optimizer_args)
+	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW, optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
+		
+		if configure_optimizer is not None:
+			model, optimizer_args = configure_optimizer(model,optimizer_args)
+		#Check if model parameters is given as list grouping
+		if isinstance(model, list):
+			self.nn_model = False
+			self.model = model
+			self.optimizer = optimizer(self.model, **optimizer_args)
+		elif isinstance(model, nn.Module):
+			self.nn_model = True
+			self.model = model
+			self.optimizer = optimizer(self.model.parameters() , **optimizer_args)
 		
 		self.clipper = clipper
 		self.clipper_params = clipper_params
@@ -34,11 +44,17 @@ class Optimizer():
 			loss.backward()
 
 		if self.clipper is not None:
-			self.clipper(self.model.parameters(), **self.clipper_params)
+			if self.nn_model:
+				self.clipper(self.model.parameters(), **self.clipper_params)
+			else:
+				params = [p for group in self.model for p in group["params"]]
+				self.clipper(params, **self.clipper_params)
+
 		self.optimizer.step()
 
 		if self.scheduler is not None and self.scheduler.auto_step:
 			self.scheduler.step()
+
 
 	def save_states(self):
 		if self.scheduler is None:
@@ -173,25 +189,4 @@ class LayerGenerator():
 		if layer.bias is not None and self.weight_init is not None:
 			nn.init.zeros_(layer.bias)
 
-class PositionalEncoder(nn.Module):
-	print_args = classmethod(print_args)
-	dependencies = []
-	def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
-		super().__init__()
-		self.dropout = nn.Dropout(p=dropout)
-
-		position = torch.arange(max_len).unsqueeze(1)
-		div_term = torch.exp(torch.arange(0, d_model, 2) * (-torch.log(torch.tensor(10000.0)) / d_model))
-		pe = torch.zeros(max_len, 1, d_model)
-		pe[:, 0, 0::2] = torch.sin(position * div_term)
-		pe[:, 0, 1::2] = torch.cos(position * div_term)
-		self.register_buffer('pe', pe)
-
-	def forward(self, x):
-		"""
-		Arguments:
-		    x: Tensor, shape ``[seq_len, batch_size, embedding_dim]``
-		"""
-		x = x + self.pe[:x.size(0)]
-		return self.dropout(x)
 

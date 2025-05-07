@@ -1,12 +1,12 @@
 #https://arxiv.org/html/2406.09997v1#bib.bib39
 #https://github.com/HSG-AIML/SANE
-
+import itertools
 import torch
 import torch.nn as nn
 
 from deeppy.utils import print_args
 
-from deeppy import Network, SanePositionalEmbedding, SqueezeLastDimention, NTXentLoss, NT_Xent
+from deeppy import Network, SanePositionalEmbedding, SqueezeLastDimention, NTXentLoss, NT_Xent, Optimizer
 from deeppy.models import BaseModel
 
 
@@ -54,6 +54,7 @@ class Sane(BaseModel):
 		#Create Networks
 		self.autoencoder, self.autoencoder_params = self.build_autoencoder()
 		self.project , self.project_params = self.build_projection_head()
+		self.optimizer = self.configure_optimizer()
 		
 		
 		self.nets = [self.autoencoder, self.project]
@@ -115,11 +116,7 @@ class Sane(BaseModel):
 		
 		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
 
-		for net in self.nets:
-			net.optimizer.optimizer.zero_grad()
-		loss.backward()
-		for net in self.nets:
-			net.back_propagate(loss=None)
+		self.optimizer.step(loss)
 
 		return loss
 		
@@ -198,7 +195,6 @@ class Sane(BaseModel):
 			"arch_params": encoder_params,
 			"decoder_params" : decoder_params,
 			"task" : "autoencoder",
-			"optimizer_params":self.optimizer_params,
 		}	
 
 		return Network(**network_params).to(self.device), network_params
@@ -217,6 +213,21 @@ class Sane(BaseModel):
 
 		network_params = {
 			"arch_params": [arch_params1, arch_params2],
-			"optimizer_params":self.optimizer_params,
 		}
 		return Network(**network_params).to(self.device), network_params
+
+
+	def configure_optimizer(self):
+		params = itertools.chain(self.autoencoder.named_parameters(), self.project.named_parameters())
+		param_dict = {pn: p for pn, p in params}
+		param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+
+		decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
+		nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+
+		optim_groups = [
+			{"params": decay_params, "weight_decay": self.optimizer_params["optimizer_args"]["weight_decay"]},
+			{"params": nodecay_params, "weight_decay": 0.0},
+		]
+		del self.optimizer_params["optimizer_args"]["weight_decay"]
+		return Optimizer(optim_groups, **self.optimizer_params)

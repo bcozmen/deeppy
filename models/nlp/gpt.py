@@ -78,6 +78,28 @@ class GPT(BaseModel):
 		return X
 
 
+	def configure_optimizer(self,model, optimizer_params):
+		print(model)
+		params = model.named_parameters()
+		param_dict = {pn: p for pn, p in params}
+		param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+
+		decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
+		nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+
+		decay_params_n = [n for n, p in param_dict.items() if p.dim() >= 2]
+		nodecay_params_n = [n for n, p in param_dict.items() if p.dim() < 2]
+
+		print(decay_params_n)
+
+		print(nodecay_params_n)
+
+		optim_groups = [
+			{"params": decay_params, "weight_decay": self.optimizer_params["optimizer_args"]["weight_decay"]},
+			{"params": nodecay_params, "weight_decay": 0.0},
+		]
+		return optim_groups, optimizer_params
+
 	def build_transformer(self):
 		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = self.embed_dim*4, activation = nn.GELU(), batch_first= True, norm_first = True, dropout=self.dropout)
 
@@ -110,6 +132,7 @@ class GPT(BaseModel):
 			],
 		}
 
+		self.optimizer_params["configure_optimizer"] = self.configure_optimizer
 		return {
 			"arch_params":arch_params,
 			"optimizer_params":self.optimizer_params,
