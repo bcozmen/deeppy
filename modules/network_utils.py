@@ -55,7 +55,6 @@ class Optimizer():
 		if self.scheduler is not None and self.scheduler.auto_step:
 			self.scheduler.step()
 
-
 	def save_states(self):
 		if self.scheduler is None:
 			sch = None
@@ -77,15 +76,11 @@ class Optimizer():
 			self.scheduler.scheduler.load_state_dict(dic["scheduler"])
 
 
-
-		
-
 class recurrent_layer_helper(nn.Module):
     def forward(self,x):
         tensor, states = x
         self.states = states
         return tensor
-
 
 
 #Should be more generalized with arguments
@@ -101,10 +96,8 @@ class LayerGenerator():
 
 		net = []
 
-
 		#Make sure that block_args is same size as blocks
 		block_args = block_args + [{} for i in range((len(blocks) - len(block_args)))]
-
 
 		#Go through layers
 		for ix,(inp,out) in enumerate(zip(layers[:-1], layers[1:])):
@@ -116,8 +109,6 @@ class LayerGenerator():
 			if block.__name__ in ["RNN","LSTM", "GRU"]:
 				net.append(recurrent_layer_helper())
 
-
-			
 			#Go for later blocks
 			for block,bargs in zip(blocks[1:], block_args[1:]):
 				#If its an activation function
@@ -135,8 +126,6 @@ class LayerGenerator():
 					bargs["num_features"] = out
 				net.append(block(**bargs))
 
-
-
 		#If just one layer is given (like nn.Linear), initialize the out activation function too
 		if len(net) == 1:
 			block = out_act
@@ -151,12 +140,7 @@ class LayerGenerator():
 		if len(net) == 0:
 			for block,args in zip(blocks, block_args):
 				net.append(block(**args))
-				
-
-
 		return net
-
-
 
 	def init_weights(self, layer, act):
 		n_slope = 0
