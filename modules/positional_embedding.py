@@ -12,7 +12,13 @@ class OrderedPositionalEmbedding(nn.Module):
         pos = torch.arange(0, t, dtype=torch.long, device = x.device).unsqueeze(0) 
         return x + self.embed(pos)
 
-
+class LinearBeforePosition(nn.Module):
+    def __init__(self,in_features, out_features):
+        super().__init__()
+        self.linear= nn.Linear(in_features,out_features)
+    def forward(self,X):
+        x,p = X
+        return self.linear(x),p
 
 class SanePositionalEmbedding(nn.Module):
     def __init__(self, max_positions=[48, 256], embed_dim=128):
@@ -28,7 +34,8 @@ class SanePositionalEmbedding(nn.Module):
             self.pe2 = nn.Embedding(max_positions[1], embed_dim // 2)  # add 1 + 2
             self.pe3 = nn.Embedding(max_positions[2], embed_dim // 2)  # cat 1+2 & 3
 
-    def forward(self, inputs, pos):
+    def forward(self, X):
+        inputs, pos = X
         pos_emb1 = self.pe1(pos[:, :, 0])
         pos_emb2 = self.pe2(pos[:, :, 1])
         if self.pe3 is not None:

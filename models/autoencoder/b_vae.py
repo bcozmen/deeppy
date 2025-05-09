@@ -9,12 +9,14 @@ class B_Vae(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
 	optimize_return_labels = ["Loss", "MSE Loss", "KL Loss"]
-	def __init__(self, network_params,  beta,  device = None, criterion = nn.MSELoss()):
-		super().__init__(device= device, criterion = criterion)
+	def __init__(self, network_params,  beta,  device = None, criterion = nn.MSELoss(), torch_compile = False):
+		super().__init__(device= device, criterion = criterion, torch_compile=torch_compile)
 		self.beta = beta
 		self.network_params = network_params
 
 		self.net = Network(**network_params).to(self.device)
+		if torch_compile:
+			self.net = torch.compile(self.net)
 		
 		self.params = [network_params,  beta,  device, criterion ]
 		self.nets = [self.net]

@@ -6,29 +6,21 @@ import torch.nn as nn
 
 from deeppy.utils import print_args
 
-from deeppy import Network, SanePositionalEmbedding, SqueezeLastDimention, NTXentLoss, NT_Xent, Optimizer
+from deeppy import Network, SanePositionalEmbedding,LinearBeforePosition, SqueezeLastDimention, NTXentLoss, NT_Xent, Optimizer
 from deeppy.models import BaseModel
-
-
-
-def parse_input(func):
-	def wrapper(self,X):
-		if len(X) == 2:
-			X = X + (None,)
-		return func(self,X)
-	return wrapper
 
 class Sane(BaseModel):
 	#kwargs = device, criterion
-	dependencies = []
+	dependencies = [Network]
 	optimize_return_labels = ["Loss"]
 
 	def __init__(self, optimizer_params, max_positions, 
 		input_dim= 201, latent_dim = 128, projection_dim = 30,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
-		device = None, gamma = 0.5, ntx_temp = 0.1):
+		gamma = 0.5, ntx_temp = 0.1,
+		device = None, torch_compile = False):
 
-		super().__init__(device= device)
+		super().__init__(device= device, torch_compile=torch_compile)
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp
@@ -36,13 +28,16 @@ class Sane(BaseModel):
 		self.ntx_crit = NT_Xent(temp = ntx_temp)
 		self.gamma = gamma
 
-		#Transformer parameters
-		self.max_positions = max_positions
+		
+		#Encoder
 		self.input_dim = input_dim
+		self.max_positions = max_positions
 		self.embed_dim = embed_dim
+		#Transformer
 		self.context_size = context_size
 		self.num_heads = num_heads
 		self.num_layers = num_layers
+		
 		self.dropout = dropout
 		self.bias = bias
 		self.projection_dim = projection_dim
@@ -55,6 +50,9 @@ class Sane(BaseModel):
 		self.autoencoder, self.autoencoder_params = self.build_autoencoder()
 		self.project , self.project_params = self.build_projection_head()
 		self.optimizer = self.configure_optimizer()
+
+		if self.torch_compile:
+			self.autoencoder, self.project = torch.compile(self.autoencoder), torch.compile(self.project)
 		
 		
 		self.nets = [self.autoencoder, self.project]
@@ -65,38 +63,19 @@ class Sane(BaseModel):
 	
 	def init_objects(self):
 		self.recon_crit, self.ntx_crit = self.objects	
+	def __call__(self,X):
+		return self.forward(X)
+	def forward(self, X):
+		X,p = self.ensure(X)
 
-	@parse_input
-	def __call__(self, X):
-		X,p,m = self.ensure(X)
-
-		z = self.encode((X,p,m))
+		z = self.autoencoder.encode((X,p))
 		zp = self.project(z)
-		y = self.decode((z,p,m))
+		y = self.autoencoder.decode((z,p))
 		return z, y, zp
-	@parse_input
 	def encode(self,X):
-		X,p,m = self.ensure(X)
-		
-		X = self.autoencoder.model[0](X)
-		X = self.autoencoder.model[1](X,p)
-		X = self.autoencoder.model[2](X)
-		X = self.autoencoder.model[3](X,m)
-		X = self.autoencoder.model[4](X)
-		return X
-	@parse_input
+		return self.autoencoder.encode(X)
 	def decode(self,X):
-		X,p,m = self.ensure(X)
-
-		X = self.autoencoder.model[5](X)
-		X = self.autoencoder.model[6](X,p)
-		X = self.autoencoder.model[7](X)
-		X = self.autoencoder.model[8](X,m)
-		X = self.autoencoder.model[9](X)
-
-		return X
-
-
+		return self.autoencoder.decode(X)
 	def embed(self,X):
 		return torch.mean(self.encode(X), dim=1)
 
@@ -142,7 +121,7 @@ class Sane(BaseModel):
 		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		
 		encoder_params = {
-			"blocks":[nn.Linear,SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
+			"blocks":[LinearBeforePosition,SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
 			"block_args":[
 				{
 					"in_features": self.input_dim,
@@ -167,7 +146,7 @@ class Sane(BaseModel):
 		}
 
 		decoder_params = {
-			"blocks":[nn.Linear, SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
+			"blocks":[LinearBeforePosition, SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
 			"block_args":[
 				{
 					"in_features": self.latent_dim,

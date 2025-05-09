@@ -9,8 +9,9 @@ from deeppy.models import BaseModel
 class DQN(BaseModel):
     dependencies = [Network, Epsilon, TargetUpdater]
     optimize_return_labels = ["Loss"]
-    def __init__(self, network_params, gamma = 0.99, tau = 0.005, eps_params = {"eps":None}, variant = "DQN" ,  device = None, criterion = nn.MSELoss()):
-        super().__init__(device = device, criterion = criterion)
+    def __init__(self, network_params, gamma = 0.99, tau = 0.005, eps_params = {"eps":None}, variant = "DQN" ,
+      device = None, criterion = nn.MSELoss(),torch_compile=False):
+        super().__init__(device = device, criterion = criterion, torch_compile=torch_compile)
 
         self.variant = variant
 
@@ -20,6 +21,9 @@ class DQN(BaseModel):
 
         self.q_net = Network(**network_params).to(self.device)
         self.target_net = Network(**network_params).to(self.device)
+
+        if self.torch_compile:
+            self.q_net, self.target_net = torch.compile(self.q_net), torch.compile(self.target_net)
         
         self.nets = [self.q_net, self.target_net]
 
@@ -86,8 +90,9 @@ class DQN(BaseModel):
 class DDQN(BaseModel):
     dependencies = [Network, Epsilon]
     optimize_return_labels = ["Mean Critic Loss"]
-    def __init__(self, network_params, gamma = 0.99,tau = 0.005,  eps_params = {"eps":None},  device = None, criterion = nn.MSELoss()):
-        super().__init__(device = device, criterion = criterion)
+    def __init__(self, network_params, gamma = 0.99,tau = 0.005,  eps_params = {"eps":None}, 
+     device = None, criterion = nn.MSELoss(), torch_compile = False):
+        super().__init__(device = device, criterion = criterion, torch_compile=torch_compile)
         #Q = Q(s,a) -> 1
         #V = V(s)   -> dim(a)
         #Only edited by SAC in continious mode to "Q"
@@ -97,8 +102,8 @@ class DDQN(BaseModel):
         
         
         # Critic networks
-        self.q_net1 = DQN(network_params=network_params, device = self.device, tau = tau)
-        self.q_net2 = DQN(network_params=network_params, device = self.device, tau = tau)
+        self.q_net1 = DQN(network_params=network_params, device = self.device, tau = tau, torch_compile=torch_compile)
+        self.q_net2 = DQN(network_params=network_params, device = self.device, tau = tau, torch_compile=torch_compile)
 
         self.nets = [self.q_net1, self.q_net2]
         self.params = [network_params, gamma, tau, eps_params,  device ]

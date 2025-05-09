@@ -22,9 +22,9 @@ class Nerf(BaseModel):
 
 		return self.partial_forward(torch.cat((L2,D), dim=1),2), L2[:,0]
 
-	def __init__(self, network_params,   device = None, criterion = nn.MSELoss(reduction = "none")):
+	def __init__(self, network_params,   device = None, criterion = nn.MSELoss(reduction = "none"), torch_compile = False):
 
-		super().__init__(device= device, criterion = criterion)
+		super().__init__(device= device, criterion = criterion, torch_compile=torch_compile)
 		self.network_params = network_params
 		
 		self.net_coarse = Network(**network_params).to(self.device)
@@ -32,6 +32,8 @@ class Nerf(BaseModel):
 		self.net_fine = Network(**network_params).to(self.device)
 		self.net_fine.forward = types.MethodType(new_forward, self.net_fine)
 
+		if self.torch_compile:
+			self.net_coarse, self.net_fine = torch.compile(self.net_coarse), torch.compile(self.net_fine)
 		self.params = [network_params, device, criterion ]
 		
 		self.nets = [self.net_coarse, self.net_fine]

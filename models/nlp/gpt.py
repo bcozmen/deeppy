@@ -10,8 +10,9 @@ class GPT(BaseModel):
 	dependencies = [Network]
 	optimize_return_labels = ["Loss"]
 	#test_return_labels = ["Accuracy"]
-	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, context_size=11, dropout = 0.1, device = None, criterion = nn.CrossEntropyLoss()):
-		super().__init__(device = device, criterion=criterion)
+	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, context_size=11, dropout = 0.1, 
+		device = None, criterion = nn.CrossEntropyLoss(), torch_compile=False):
+		super().__init__(device = device, criterion=criterion, torch_compile=torch_compile)
 
 		self.vocab_size = vocab_size
 		self.embed_dim = embed_dim
@@ -23,6 +24,8 @@ class GPT(BaseModel):
 
 		network_params = self.build_transformer()
 		self.net = Network(**network_params).to(self.device)
+		if self.torch_compile:
+			self.net = torch.compile(self.net)
 		
 		self.nets = [self.net]
 		self.params = [network_params]

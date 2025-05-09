@@ -4,7 +4,7 @@ import torch
 
 class Base(ABC):
     print_args = classmethod(print_args)
-    def __init__(self, batch_size = 64, num_workers = 0 , device = None, pin_memory=True, shuffle = True):
+    def __init__(self, batch_size = 64, num_workers = 0 ,pin_memory=True, shuffle = True):
         self.device = torch.device("cpu")
         self.batch_size = batch_size
         self.num_workers = num_workers

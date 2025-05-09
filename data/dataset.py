@@ -3,9 +3,6 @@ from deeppy.data.base import Base
 
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch
-import pickle
-import warnings
-
 
 class GPTText(Base):
     def __init__(self,train, tokenizer, context_size, test = None, valid = None,  batch_size = 64, test_size = 0.1):
@@ -48,9 +45,9 @@ class GPTText(Base):
         return x,y
 
     def load(self):
-        pass
+        print("Save for GPTText is not possible. Please save your dataset")
     def save(self):
-        pass
+        print("Save for GPTText is not possible. Please save your dataset")
 
 class FromLoader(Base):
     def __init__(self, train_loader, test_loader = [], valid_loader = [],
@@ -67,10 +64,9 @@ class FromLoader(Base):
     def valid_data(self):
         return tuple(next(iter(self.valid_loader)))
     def save(self,file_name):
-        warnings.warn("Save for train loader is not possible. Please save your dataset")
-
+        print("Save for train loader is not possible. Please save your dataset")
     def load(self, file_name):
-        pass
+        print("Save for train loader is not possible. Please save your dataset")
 
 class DataGetter(Base):
     def __init__(self,X=None, y= None, X_valid = None, X_test = None, y_test = None, 
@@ -160,5 +156,75 @@ class Data(Dataset):
 
 
 
+class InpgDataset(Dataset):
+    def __init__(self,data_path, config, window_size):
+        import glob
+        import json
+
+        self.data_path = data_path
+        self.config = config
+        self.window_size = window_size
+        self.load_object_paths()
+        
+        
+    def __len__(self):
+        return len(self.all_objects)
+
+    def __add__(self):
+        pass
+
+    def __getitem__(self, idx):
+        file_path, transform = self.all_objects[idx]
+        model = self.load_torch_weights(file_path)
+        return self.data_augmentation(model)
 
 
+    def load_object_paths(self):
+        self.objects = glob.glob(self.data_path + "/*")
+        self.all_objects_2d = []
+        self.all_objects
+        for o in self.objects:
+            objs_path = glob.glob(o + "/*")
+            this_object = []
+            for in_obj in objs_path:
+                with open(in_obj + "/transforms.json", "r") as file:
+                    transform = json.load(file)
+                    del transform["frames"]
+                data = (in_obj + "/checkpoints/final.pth",transform)
+                this_object.append(data)
+                self.all_objects.append(data)
+            self.all_objects_2d.append(this_object)
+
+        self.select_aligned_model()
+    
+    def load_torch_weights(self,file_path):
+        """Load model weights from a checkpoint file."""
+        try:
+            weights = torch.load(file_path, map_location=self.device)
+            return weights['model']
+        except Exception as e:
+            print(f"Error loading file {file_path}: {e}")
+            return None
+
+    def select_aligned_model(self):
+        file_path, transform = self.all_objects[0]
+        self.aligned_model = self.load_torch_weights(file_path)
+    
+    def data_augmentation(self,model):
+        augment = self.permute(model)
+        model, augment, position = self.cut_model(model, augment)
+        augment = self.add_noise(augment)
+        mask = self.create_mask(model)
+        return (model, position, mask, augment, position, mask)
+
+    def cut_model(self,model, augment):
+        return model,augment, 0
+
+    def create_mask(self,model):
+        return mask
+    
+    def permute(self, model):
+        return model
+    
+    def add_noise(self,model):
+        return model
