@@ -9,21 +9,21 @@ from deeppy.modules.network import Network
 
 class BaseModel(ABC):
 	"""
-    A Basis Object For models.
+	A Basis Object For models.
 
-    """
+	"""
 	print_args = classmethod(print_args)
 	dependencies = []
 	optimize_return_labels = []
 	def __init__(self, device = None, criterion = nn.MSELoss(), torch_compile = False):
 		"""
-        Initializes Base model
+		Initializes Base model
 
-        Args:
-            device (torch.device): Device to be used
-            attr2 (type): Description of the second parameter.
-        """
-        self.torch_compile = torch_compile
+		Args:
+			device (torch.device): Device to be used
+			attr2 (type): Description of the second parameter.
+		"""
+		self.torch_compile = torch_compile
 		self.device = device
 		self.criterion = criterion
 		self.training = True
