@@ -38,7 +38,7 @@ class Optimizer():
 		if scheduler_params is not None:
 			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
 	
-	def step(self,loss = None):
+	def step(self,loss = None, scaler = None):
 		if loss is not None:
 			self.optimizer.zero_grad()
 			loss.backward()

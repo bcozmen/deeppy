@@ -63,21 +63,46 @@ class Sane(BaseModel):
 	
 	def init_objects(self):
 		self.recon_crit, self.ntx_crit = self.objects	
+	
 	def __call__(self,X):
 		return self.forward(X)
+
+	@self.ensure
 	def forward(self, X):
-		X,p = self.ensure(X)
+		X,p = X
 
 		z = self.autoencoder.encode((X,p))
 		zp = self.project(z)
 		y = self.autoencoder.decode((z,p))
 		return z, y, zp
+	@self.ensure
 	def encode(self,X):
 		return self.autoencoder.encode(X)
+	@self.ensure
 	def decode(self,X):
 		return self.autoencoder.decode(X)
+	@self.ensure
 	def embed(self,X):
 		return torch.mean(self.encode(X), dim=1)
+	@self.ensure
+	def get_loss(self,X):
+		x_i, p_i,m_i, x_j, p_j,m_j = X
+		z_i, y_i, zp_i = self((x_i, p_i))
+		z_j, y_j, zp_j = self((x_j, p_j))
+		# cat y_i, y_j and x_i, x_j, and m_i, m_j
+		x = torch.cat([x_i, x_j], dim=0)
+		y = torch.cat([y_i, y_j], dim=0)
+		m = torch.cat([m_i, m_j], dim=0)
+		# compute loss
+
+		recon_loss = self.recon_crit(y*m,x)
+		ntx_loss = self.ntx_crit(zp_i, zp_j)
+		
+		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
+		return loss, loss.item()
+
+	def optimizer_step(self,loss,scaler):
+		self.optimizer.step(loss,scaler)
 
 	def optimize(self, X):
 		x_i, p_i,m_i, x_j, p_j,m_j = self.ensure(X)

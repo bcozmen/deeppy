@@ -26,16 +26,23 @@ class Network(nn.Module):
 		self.optimizer_params = optimizer_params
 		if self.optimizer_params is not None:
 			self.optimizer = Optimizer(self.model, **self.optimizer_params)
+		else:
+			self.optimizer = None
 		
 	def save_states(self):
+		try:
+			optimizer_dict = self.optimizer.save_states(),
+		except:
+			optimizer_dict = None
 		return {
 			"net" : self.model.state_dict(),
-			"optimizer" : self.optimizer.save_states(),
+			"optimizer" : optimizer_dict
 		}
 
 	def load_states(self, dic):
 		self.model.load_state_dict(dic["net"])
-		self.optimizer.load_states(dic["optimizer"])
+		if self.optimizer is not None:
+			self.optimizer.load_states(dic["optimizer"])
 
 	def generate(self):
 		layer_generator = LayerGenerator()
@@ -65,7 +72,7 @@ class Network(nn.Module):
 	def forward(self, X):
 		if self.task == "autoencoder":
 			return self.decode(self.encode(X))
-			
+
 		logits = self.model(X)
 
 		if not self.training and self.task == "classify":
@@ -73,8 +80,8 @@ class Network(nn.Module):
 		return logits
 
 
-	def back_propagate(self, loss):
-		self.optimizer.step(loss)
+	def back_propagate(self, loss, scaler=None):
+		self.optimizer.step(loss, scaler)
 
 	def scheduler_step(self):
 		self.optimizer.scheduler.step()

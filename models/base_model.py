@@ -5,7 +5,43 @@ from abc import ABC, abstractmethod
 
 from deeppy.utils import print_args
 from deeppy.modules.network import Network
+from torch.cuda.amp import autocast, GradScaler
 
+class EnsureMeta(type):
+    def __new__(cls, name, bases, dct):
+        # Define the Transform function inside the metaclass
+        def ensure_tensor_device(self, X):
+			if X is None:
+				return X
+			if not torch.is_tensor(X):
+				X = torch.tensor(X)  # Convert to tensor
+			if X.device != self.device:
+				X = X.to(self.device,non_blocking=True)
+			return X
+
+		def ensure(self, X):
+			if isinstance(X,tuple):
+				return tuple(map(self.ensure_tensor_device,X))
+			else:
+				return self.ensure_tensor_device(X)
+        
+        # Add the Transform method to the class being created
+        dct['ensure_tensor_device'] = ensure_tensor_device
+        dct['ensure'] = ensure
+        
+        # Now, handle wrapping specific methods to apply the transform
+        transform_methods = dct.get('_transform_methods', [])
+
+        for key, value in dct.items():
+            if callable(value) and key in transform_methods:
+                # Wrap the method to apply Transform to input
+                original_func = value
+                def wrapped_func(self, X, *args, **kwargs):
+                    X = self.ensure(X)  # Apply Transform
+                    return original_func(self, X, *args, **kwargs)
+                dct[key] = wrapped_func
+        
+        return super().__new__(cls, name, bases, dct)
 
 class BaseModel(ABC):
 	"""
@@ -15,7 +51,10 @@ class BaseModel(ABC):
 	print_args = classmethod(print_args)
 	dependencies = []
 	optimize_return_labels = []
-	def __init__(self, device = None, criterion = nn.MSELoss()):
+
+	_transform_methods = ["optimize"]
+
+	def __init__(self, device = None, criterion = nn.MSELoss(), amp = False):
 		"""
 		Initializes Base model
 
@@ -29,6 +68,14 @@ class BaseModel(ABC):
 		self.nets = []
 		self.params = []
 		self.objects = []
+		self.amp = amp
+		self.scaler = None
+		if self.amp:
+			self.scaler = GradScaler()
+
+
+
+
 
 	
 	@abstractmethod
@@ -42,6 +89,21 @@ class BaseModel(ABC):
 	@abstractmethod
 	def optimize(self, X):
 		pass
+
+	def optimize_amp(self,X):
+		with autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
+			loss = self.get_loss(self.ensure(X))
+		
+		self.optimizer_step(loss, self.scaler)
+
+		return loss
+	@self.ensure
+	def get_loss(self,X):
+		pass
+	def optimizer_step(self,loss, scaler):
+		pass
+
+
 	@torch.no_grad()
 	def test(self, X):
 		pass

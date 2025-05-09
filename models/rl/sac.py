@@ -56,16 +56,14 @@ class SAC(BaseModel):
         self.criterion = self.objects[0]
     def __call__(self,X):
         return self.predict(X)
-
+    @self.ensure
     def predict(self, X):
-        X = self.ensure(X)
         with torch.no_grad():
             action, action_probs, log_pis = self.get_action(X)
         return action
 
-
+    @self.ensure
     def get_action(self, X):
-        X = self.ensure(X)
         action_probs = self.policy_net(X) #(Batch, 2dim)
 
         if self.mode == "discrete":

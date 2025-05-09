@@ -30,15 +30,21 @@ class B_Vae(BaseModel):
 		y_pred = self.net.decode(z)
 
 		return y_pred, mu, logvar
-
+	@self.ensure
 	def encode(self,X):
-		X = self.ensure(X)
 		return self.net.encode(X)
-
+	@self.ensure
 	def decode(self,X):
-		X = self.ensure(X)
 		return self.net.decode(X)
 
+	def get_loss(self,X):
+		y_pred, mu, logvar = self(X)
+		con_loss = self.criterion(y_pred, y)  
+		kl_loss = self.kl_loss(mu, logvar)
+		loss = con_loss + self.beta * kl_loss
+		return loss, (loss.item(), con_loss.item(), kl_loss.item())
+	def optimizer_step(self,loss, scaler):
+		self.net.back_propagate(loss,scaler)
 	
 	def optimize(self, X):
 		X,y = self.ensure(X)

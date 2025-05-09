@@ -38,8 +38,8 @@ class DQN(BaseModel):
 
     def __call__(self,X):
         return self.predict(X)
+    @self.ensure
     def predict(self, X):
-        X = self.ensure(X)
         if self.training:
             self.eps.update()
 
@@ -55,7 +55,31 @@ class DQN(BaseModel):
                 actions = actions.max(1,keepdim=True).indices
 
         return actions
-    
+    @self.ensure
+    def get_loss(self,X):
+        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(X)
+        non_final_mask = torch.logical_not(done)
+
+        state_action_values = self.q_net(state_batch).gather(1, action_batch)
+
+
+        if self.variant == "DQN":
+            with torch.no_grad():
+                next_state_values = self.target_net(next_state_batch).max(1,keepdim=True).values * non_final_mask
+            
+        elif self.variant == "DoubleDQN":
+            with torch.no_grad():
+                next_action = self.q_net(next_state_batch).max(1,keepdim=True).indicestorch.no_grad
+                next_state_values = (self.target_net(next_state_batch).gather(1,next_action) * non_final_mask)   
+            
+
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+        loss = self.criterion(state_action_values, expected_state_action_values)
+        return loss, loss.item()
+
+    def optimizer_step(self,loss, scaler):
+        self.q_net.back_propagate(loss,scaler)
+        self.target_updater.update()
     def optimize(self, X):
         state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(X)
         non_final_mask = torch.logical_not(done)
@@ -115,13 +139,11 @@ class DDQN(BaseModel):
         return self.predict(X)
     def init_objects(self):
         self.eps, self.criterion, = self.objects
-    
+    @self.ensure
     def predict(self, X):
         #Only for V value
         if self.mode == "Q":
             raise ValueError("Only for V networks")
-
-        X = self.ensure(X)
 
         if self.training:
             self.eps.update()
@@ -135,6 +157,34 @@ class DDQN(BaseModel):
             with torch.no_grad():
                 action = self.q_net1.q_net(X).max(1,keepdim=True).indices
         return action
+
+    @self.ensure
+    def get_loss(self,X):
+        state_batch, action_batch, next_state_batch,reward_batch, done = X
+        non_final_mask = torch.logical_not(done)
+
+
+        q1,q2 = self.compute_critic(state_batch, action_batch)
+        
+        self.eval()
+        next_action = self(next_state_batch)
+        self.train() 
+        next_state_values = self.compute_target(next_state_batch, action = next_action) * non_final_mask 
+        
+        #next_state_values = torch.zeros(len(state_batch), device=self.device).view(-1,1)
+        #next_state_values[non_final_mask] = Q_min_next
+        Q_targets = reward_batch + (self.gamma * next_state_values)
+
+        
+        critic1_loss = 0.5 * self.criterion(q1, Q_targets)
+        critic2_loss = 0.5 * self.criterion(q2, Q_targets)
+
+        return (critic1_loss, critic2_loss) , (critic1_loss.item() + critic2_loss.item()) / 2
+    def optimizer_step(self,loss, scaler):
+        critic1_loss, critic2_loss = loss
+        self.q_net1.back_propagate(critic1_loss, scaler)
+        self.q_net2.back_propagate(critic2_loss, scaler)
+        self.update_target()
 
     def optimize(self, X):
         # Compute 0.5 (Q(s, a) - (r(s,a) + gamma (pi(s+1)[Q(s+1) - alpha log(pi(s+1))])^2

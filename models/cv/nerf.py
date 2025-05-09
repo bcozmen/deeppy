@@ -52,6 +52,11 @@ class Nerf(BaseModel):
 
 	def sample_informed(self,w):
 		return sample
+
+	def get_loss(self,X):
+		pass
+	def optimizer_step(self,loss, scaler):
+		pass
 	def optimize(self, X):
 		X,y = self.ensure(X)
 

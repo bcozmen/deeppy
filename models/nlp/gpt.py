@@ -34,9 +34,20 @@ class GPT(BaseModel):
 	def init_objects():
 		pass
 	def __call__(self,X):
-		X = self.ensure(X)
-		outs = self.net(X)
-		return outs
+		return self.forward(X)
+
+	@self.ensure
+	def forward(self,X):
+		return self.net(X)
+	@self.ensure
+	def get_loss(self,X):
+		X,y = X
+		outs = self(X)
+		loss = self.criterion(outs.view(-1, outs.size(-1)),y.view(-1))
+		return loss, loss.item()
+	def optimizer_step(self,loss, scaler):
+		self.net.back_propagate(loss, scaler)
+ 
 	def optimize(self, X):
 		X,y = self.ensure(X)  
 		outs = self(X)
