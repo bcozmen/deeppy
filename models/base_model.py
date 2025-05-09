@@ -15,7 +15,7 @@ class BaseModel(ABC):
 	print_args = classmethod(print_args)
 	dependencies = []
 	optimize_return_labels = []
-	def __init__(self, device = None, criterion = nn.MSELoss(), torch_compile = False):
+	def __init__(self, device = None, criterion = nn.MSELoss()):
 		"""
 		Initializes Base model
 
@@ -23,7 +23,6 @@ class BaseModel(ABC):
 			device (torch.device): Device to be used
 			attr2 (type): Description of the second parameter.
 		"""
-		self.torch_compile = torch_compile
 		self.device = device
 		self.criterion = criterion
 		self.training = True

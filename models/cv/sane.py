@@ -18,9 +18,9 @@ class Sane(BaseModel):
 		input_dim= 201, latent_dim = 128, projection_dim = 30,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
 		gamma = 0.5, ntx_temp = 0.1,
-		device = None, torch_compile = False):
+		device = None):
 
-		super().__init__(device= device, torch_compile=torch_compile)
+		super().__init__(device= device)
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp
@@ -51,9 +51,7 @@ class Sane(BaseModel):
 		self.project , self.project_params = self.build_projection_head()
 		self.optimizer = self.configure_optimizer()
 
-		if self.torch_compile:
-			self.autoencoder, self.project = torch.compile(self.autoencoder), torch.compile(self.project)
-		
+	
 		
 		self.nets = [self.autoencoder, self.project]
 		self.params = [self.autoencoder_params, self.project_params]

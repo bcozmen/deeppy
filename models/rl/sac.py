@@ -19,9 +19,9 @@ class SAC(BaseModel):
     dependencies = [Network, DDQN]
     optimize_return_labels = ["Mean Critic Loss", "Actor Loss", "Alpha Loss"]
     def __init__(self, ddqn_params, pnet_params, alpha_lr, gamma =0.99, target_entropy = -1. , 
-        device = None, criterion = nn.MSELoss(), torch_compile=False,
+        device = None, criterion = nn.MSELoss(),
         mode = "discrete", continuous_action = torch.tanh):
-        super().__init__(device = device, criterion = criterion, torch_compile=torch_compile)
+        super().__init__(device = device, criterion = criterion)
 
         self.mode = mode
         self.continuous_action = continuous_action
@@ -37,12 +37,11 @@ class SAC(BaseModel):
 
         # Actor
         self.policy_net = Network(**pnet_params).to(self.device)
-        if self.torch_compile:
-            self.policy_net = torch.compile(self.policy_net)
+
 
 
         # Critic networks
-        self.ddqn = DDQN(**ddqn_params, device = device, torch_compile=torch_compiles)
+        self.ddqn = DDQN(**ddqn_params, device = device)
         if self.mode != "discrete":
             self.ddqn.mode = "Q"
 

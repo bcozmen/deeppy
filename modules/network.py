@@ -11,6 +11,7 @@ class Network(nn.Module):
 	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = None):
 		super(Network, self).__init__()
 
+		self.torch_compile = torch_compile
 		self.task = task
 		if isinstance(arch_params, dict):
 			arch_params = [arch_params]
@@ -53,7 +54,12 @@ class Network(nn.Module):
 		
 		self.net_modules = net_modules
 		self.model = nn.Sequential(*net)
-		return nn.Sequential(*net)
+
+		if self.task == "autoencoder":
+			self.encode = self.model[:self.encoder_len]
+			self.decode = self.model[self.encoder_len:]
+
+
 
 	def partial_forward(self,X, ix):
 		start_ix, end_ix = self.net_modules[ix], self.net_modules[ix+1]
@@ -65,16 +71,6 @@ class Network(nn.Module):
 		if not self.training and self.task == "classify":
 			return (logits > 0.5).float()
 		return logits
-
-	def encode(self, X):	
-		if self.task != "autoencoder":
-			return None
-		return self.model[:self.encoder_len](X)
-
-	def decode(self, X):
-		if self.task != "autoencoder":
-			return None
-		return self.model[self.encoder_len:](X)
 
 
 	def back_propagate(self, loss):
