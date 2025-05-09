@@ -18,9 +18,11 @@ class Sane(BaseModel):
 		input_dim= 201, latent_dim = 128, projection_dim = 30,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
 		gamma = 0.5, ntx_temp = 0.1,
-		device = None):
+		device = None, torch_compile = False):
 
 		super().__init__(device= device)
+
+		self.torch_compile = torch_compile
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp
@@ -172,6 +174,7 @@ class Sane(BaseModel):
 			"arch_params": encoder_params,
 			"decoder_params" : decoder_params,
 			"task" : "autoencoder",
+			"torch_compile" : self.torch_compile,
 		}	
 
 		return Network(**network_params).to(self.device), network_params
@@ -190,6 +193,7 @@ class Sane(BaseModel):
 
 		network_params = {
 			"arch_params": [arch_params1, arch_params2],
+			"torch_compile" : self.torch_compile,
 		}
 		return Network(**network_params).to(self.device), network_params
 

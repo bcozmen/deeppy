@@ -40,33 +40,32 @@ class Network(nn.Module):
 	def generate(self):
 		layer_generator = LayerGenerator()
 		net = []
-		net_modules = [0]
+
 		for param in self.arch_params:
 			net += layer_generator.generate(**param)
-			net_modules.append(len(net))
-
 
 		if self.task == "autoencoder" and self.decoder_params is not None:
 			self.encoder_len = len(net)
 			for param in self.decoder_params:
 				net += layer_generator.generate(**param)
-				net_modules.append(len(net))
 		
-		self.net_modules = net_modules
+
 		self.model = nn.Sequential(*net)
 
 		if self.task == "autoencoder":
 			self.encode = self.model[:self.encoder_len]
 			self.decode = self.model[self.encoder_len:]
 
-		
+			if self.torch_compile:
+				self.encode, self.decode = torch.compile(self.encode), torch.compile(self.decode)
+		elif self.torch_compile:
+			self.model = torch.compile(self.model)	
 
-
-	def partial_forward(self,X, ix):
-		start_ix, end_ix = self.net_modules[ix], self.net_modules[ix+1]
-		return self.model[start_ix : end_ix](X)
 
 	def forward(self, X):
+		if self.task == "autoencoder":
+			return self.decode(self.encode(X))
+			
 		logits = self.model(X)
 
 		if not self.training and self.task == "classify":
