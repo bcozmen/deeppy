@@ -8,7 +8,7 @@ from deeppy.modules.network_utils import LayerGenerator, Optimizer
 class Network(nn.Module):
 	print_args = classmethod(print_args)
 	dependencies = [LayerGenerator, Optimizer]
-	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = None):
+	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = None, torch_compile = False):
 		super(Network, self).__init__()
 
 		self.torch_compile = torch_compile
@@ -59,6 +59,7 @@ class Network(nn.Module):
 			self.encode = self.model[:self.encoder_len]
 			self.decode = self.model[self.encoder_len:]
 
+		
 
 
 	def partial_forward(self,X, ix):

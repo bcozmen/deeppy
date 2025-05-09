@@ -36,7 +36,9 @@ class DQN(BaseModel):
     def init_objects(self):
         self.eps, self.criterion, = self.objects
 
-    def __call__(self, X):
+    def __call__(self,X):
+        return self.predict(X)
+    def predict(self, X):
         X = self.ensure(X)
         if self.training:
             self.eps.update()
@@ -109,10 +111,12 @@ class DDQN(BaseModel):
 
         self.train()
 
+    def __call__(self,X):
+        return self.predict(X)
     def init_objects(self):
         self.eps, self.criterion, = self.objects
     
-    def __call__(self, X):
+    def predict(self, X):
         #Only for V value
         if self.mode == "Q":
             raise ValueError("Only for V networks")

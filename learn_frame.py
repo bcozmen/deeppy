@@ -58,8 +58,8 @@ class Metric():
 
     def plot(self, log= False, show_result = False, save = None):
         if self.env_data:
-            data = [self.reward_data, self.duration_data]
-            labels = ["Reward", "Duration"]
+            data = [[self.reward_data], [self.duration_data]]
+            labels = [["Reward"], ["Duration"]]
         else:
             data = [ [self.train_data, self.test_data]]
             labels = [ [["Train " +lbl for lbl in self.train_labels], ["Test " +lbl for lbl in self.test_labels]]]
