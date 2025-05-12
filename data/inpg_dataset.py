@@ -3,12 +3,12 @@ from deeppy.data.base import Base
 
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch
-
-
+import torch.nn as nn
+import glob
+import json
 class IngpData(Dataset):
-    def __init__(self,data_path, config, window_size):
-        import glob
-        import json
+    def __init__(self,data_path, config, window_size = None):
+        
 
         self.data_path = data_path
         self.config = config
@@ -24,14 +24,14 @@ class IngpData(Dataset):
 
     def __getitem__(self, idx):
         file_path, transform = self.all_objects[idx]
-        model = self.load_torch_weights(file_path)
-        return self.data_augmentation(model)
+        (model, position, mask, augment, position, mask) = tuple(map(self.cut_model, self.get_augmented_weights(file_path)))
+        return model, position, mask, augment, position, mask
 
 
     def load_object_paths(self):
         self.objects = glob.glob(self.data_path + "/*")
         self.all_objects_2d = []
-        self.all_objects
+        self.all_objects = []
         for o in self.objects:
             objs_path = glob.glob(o + "/*")
             this_object = []
@@ -46,10 +46,45 @@ class IngpData(Dataset):
 
         self.select_aligned_model()
     
+    def data_augmentation(self,model):
+        augment = torch.clone(model)
+        #augment = self.permute(augment)
+        #model, augment, position = self.cut_model(model, augment)
+        augment = self.add_noise(augment)
+        return (model, position, mask, augment, position, mask)
+
+    def cut_model(self,model):
+        start = torch.randint(model.shape[0]-self.window_size, size = (1,)).item()
+        model = model[start:start + self.window_size]
+        return model
+
+    def create_mask(self,model):
+        return mask
+    
+    def permute(self, model):
+        return model
+    
+    def add_noise(self,model, mask):
+        aug_model = model + 0.1 * torch.randn(model.shape)
+        return aug_model * mask
+
+    def tokenize_model(self,model):
+        pass
+    
+    def get_augmented_weights(self,file_path):
+        w_dict = torch.load(file_path, map_location="cpu")['model']
+        w = self.get_mlp_weigts(w_dict)
+        if any(torch.isnan(t).any().item() for t in w):
+            print(file_path)
+
+        t,p,m = self.tokenize_mlp_weights(w)
+        t_aug = self.add_noise(t,m)
+
+        return  (t,p,m, t_aug, torch.clone(p), torch.clone(m))
     def load_torch_weights(self,file_path):
         """Load model weights from a checkpoint file."""
         try:
-            weights = torch.load(file_path, map_location=self.device)
+            weights = torch.load(file_path, map_location="cpu")
             return weights['model']
         except Exception as e:
             print(f"Error loading file {file_path}: {e}")
@@ -58,40 +93,68 @@ class IngpData(Dataset):
     def select_aligned_model(self):
         file_path, transform = self.all_objects[0]
         self.aligned_model = self.load_torch_weights(file_path)
-        if window_size is None:
-            self.window_size = self.get_max_token_size(self.aligned_model)
+        weights = self.get_mlp_weigts(self.aligned_model)
+        self.token_size = max(w.shape[1] for w in weights)
+        tokens,positions,masks = self.tokenize_mlp_weights(weights)
+        self.max_positions = torch.max(positions,dim=0).values + 1
     
-    def data_augmentation(self,model):
-        augment = self.permute(model)
-        model, augment, position = self.cut_model(model, augment)
-        augment = self.add_noise(augment)
-        mask = self.create_mask(model)
-        return (model, position, mask, augment, position, mask)
 
-    def cut_model(self,model, augment):
-        return model,augment, 0
+    def tokenize_mlp_weights(self, weights):
+        positions = []
+        tokens = []
+        masks = []
+        
+        
+        max_len = max(w.shape[1] for w in weights)
 
-    def create_mask(self,model):
-        return mask
-    
-    def permute(self, model):
-        return model
-    
-    def add_noise(self,model):
-        return model
+        for ix,w in enumerate(weights):
+            mask = torch.ones_like(w)
 
-    def tokenize_model(self,model):
-        pass
-    def get_max_token_size(self):
-        N = self.extract_hash_encoding_structure(self.aligned_model)
-        W = self.extract_mlp_weights(self.aligned_model)
-        max_token = max(max_token,N["global_info"]["embedding_dim"])
-        for key in W.keys():
-            for l in W[key].keys():
-                s = torch.prod(torch.tensor(W[key][l]["shape"][1:]))
-                max_token = max(max_token,s)
-        return max_token
-    def extract_hash_encoding_structure(model_weights):
+            x,y = w.shape
+            token = nn.functional.pad(w, (0, max_len - w.shape[1]))
+            mask = nn.functional.pad(mask, (0,max_len - w.shape[1]))
+            tokens.append(token)
+            masks.append(mask)
+
+            layer_ix = torch.full(size=(token.shape[0],1), fill_value=ix) 
+            layer_pos = torch.arange(token.shape[0]).unsqueeze(1)
+            positions.append(torch.cat((layer_ix,layer_pos), dim =1))
+
+        tokens, positions, masks = torch.cat(tokens), torch.cat(positions), torch.cat(masks)
+        positions =  torch.cat((torch.arange(positions.size(0)).unsqueeze(1),positions), dim=1)
+        # Pad each tensor to match max_len in second dimension
+
+        
+        return tokens, positions, masks
+
+    def get_mlp_weigts(self,model_weights):
+        weights = []
+        for i in range(self.config['mlp']['num_layers']):
+            weight_key = f'_orig_mod.grid_mlp.net.{i}.weight'
+            bias_key = f'_orig_mod.grid_mlp.net.{i}.bias'
+
+            if weight_key in model_weights:
+                w = model_weights[weight_key]
+                w = w.view(w.shape[0],-1)
+                if bias_key in model_weights:
+                    b = model_weights[bias_key]
+                    w = torch.cat([w,b], dim=1)
+                weights.append(w)
+                
+        # Extract view-dependent MLP weights
+        for i in range(self.config['mlp']['num_layers']):
+            weight_key = f'_orig_mod.view_mlp.net.{i}.weight'
+            bias_key = f'_orig_mod.view_mlp.net.{i}.bias'
+            
+            if weight_key in model_weights:
+                w = model_weights[weight_key]
+                w = w.view(w.shape[0],-1)
+                if bias_key in model_weights:
+                    b = model_weights[bias_key]
+                    w = torch.cat([w,b], dim=1)
+                weights.append(w)
+        return weights
+    def extract_hash_encoding_structure(self,model_weights):
         """
         Extract and organize hash encoding weights into hierarchical structure.
         
@@ -107,11 +170,12 @@ class IngpData(Dataset):
             dict: Hierarchical structure of hash encoding weights
         """
         # Extract hash encoding embeddings
-        num_levels = self.config["num_levels"]
-        level_dim = self.config["level_dim"]
-        input_dim = self.config["input_dim"]
-        log2_hashmap_size = self.config["log2_hashmap_size"]
-        base_resolution = self.config["base_resolution"]
+        config = self.config["hash_encoding"]
+        num_levels = config["num_levels"]
+        level_dim = config["level_dim"]
+        input_dim = config["input_dim"]
+        log2_hashmap_size = config["log2_hashmap_size"]
+        base_resolution = config["base_resolution"]
         embeddings = model_weights['_orig_mod.grid_encoder.embeddings']
         
         # Calculate per-level parameters
@@ -121,6 +185,9 @@ class IngpData(Dataset):
         # Initialize structure to store weights
         hash_structure = {}
         offset = 0
+
+        weights = []
+
         
         for level in range(num_levels):
             # Calculate resolution at this level
@@ -132,7 +199,7 @@ class IngpData(Dataset):
             
             # Extract weights for this level
             level_weights = embeddings[offset:offset + params_in_level]
-            
+            weights.append(weights)
             # Store level information
             hash_structure[f'level_{level}'] = {
                 'resolution': resolution,
@@ -153,12 +220,16 @@ class IngpData(Dataset):
             'per_level_scale': per_level_scale
         }
         
-        return hash_structure
+        return weights
 
-    def extract_mlp_weights(model_weights):
+    
+
+    def extract_mlp_weightsa(self, model_weights):
         """Extract geometric and view-dependent MLP weights from the model."""
         geometry_layers = {}
         view_mlp_layers = {}
+
+        weights = []
         
         # Extract geometry MLP weights
         for i in range(self.config['mlp']['num_layers']):

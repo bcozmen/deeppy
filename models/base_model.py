@@ -7,7 +7,7 @@ from deeppy.utils import print_args
 from deeppy.modules.network import Network
 from torch.amp import GradScaler
 
-class EnsureMeta(type):
+class ClassMeta(type):
 	def __call__(cls, *args, **kwargs):
 		# Create instance without running __init__
 		obj = cls.__new__(cls, *args, **kwargs)
@@ -35,7 +35,7 @@ class EnsureMeta(type):
 		return obj
 
 
-class CombinedMeta(EnsureMeta, ABCMeta):
+class CombinedMeta(ClassMeta, ABCMeta):
 	pass
 
 class BaseModel(ABC, metaclass=CombinedMeta):
@@ -72,12 +72,12 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def __call__(self, X):
 		return self.forward(X)
 
-	
+	def __str__(self):
+		return "\n=======================================\n".join([net.__str__() for net in self.nets])
 
 	def init_objects(self):
 		self.criterion = self.objects[0]
 
-	
 	def optimize(self,X):
 		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
 			loss, return_loss = self.get_loss(X)

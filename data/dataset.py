@@ -4,6 +4,7 @@ from deeppy.data.base import Base
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch
 
+
 class GPTText(Base):
     def __init__(self,train, tokenizer, context_size, test = None, valid = None,  batch_size = 64, test_size = 0.1):
         super().__init__(batch_size=batch_size)
@@ -151,7 +152,7 @@ class Data(Dataset):
 
     def __getitem__(self, idx):
         if self.y is None:
-            return self.X[idx],
+            return self.X[idx], 
         return self.X[idx], self.y[idx]
 
 

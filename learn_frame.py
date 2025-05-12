@@ -241,7 +241,7 @@ class LearnFrame():
         anim.save(name + ".mp4", writer=writervideo) 
         plt.close()
 
-    def plot(self, show_result = False, log = False,save = None):
+    def plot(self, show_result = True, log = False,save = None):
         self.metric.plot(show_result=show_result, log=log,save=save)
 
 

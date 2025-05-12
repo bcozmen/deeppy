@@ -64,7 +64,6 @@ class Sane(BaseModel):
 	def init_objects(self):
 		self.recon_crit, self.ntx_crit = self.objects	
 
-
 	def forward(self, X):
 		X,p = X
 		z = self.autoencoder.encode((X,p))
