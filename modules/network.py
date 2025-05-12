@@ -80,8 +80,8 @@ class Network(nn.Module):
 		return logits
 
 
-	def back_propagate(self, loss, scaler=None):
-		self.optimizer.step(loss, scaler)
+	def back_propagate(self, loss):
+		self.optimizer.step(loss)
 
 	def scheduler_step(self):
 		self.optimizer.scheduler.step()

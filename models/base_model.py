@@ -1,49 +1,44 @@
 import torch
 import torch.nn as nn
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod,ABCMeta
 
 from deeppy.utils import print_args
 from deeppy.modules.network import Network
-from torch.cuda.amp import autocast, GradScaler
+from torch.amp import GradScaler
 
 class EnsureMeta(type):
-    def __new__(cls, name, bases, dct):
-        # Define the Transform function inside the metaclass
-        def ensure_tensor_device(self, X):
-			if X is None:
-				return X
-			if not torch.is_tensor(X):
-				X = torch.tensor(X)  # Convert to tensor
-			if X.device != self.device:
-				X = X.to(self.device,non_blocking=True)
-			return X
+	def __call__(cls, *args, **kwargs):
+		# Create instance without running __init__
+		obj = cls.__new__(cls, *args, **kwargs)
 
-		def ensure(self, X):
-			if isinstance(X,tuple):
-				return tuple(map(self.ensure_tensor_device,X))
-			else:
-				return self.ensure_tensor_device(X)
-        
-        # Add the Transform method to the class being created
-        dct['ensure_tensor_device'] = ensure_tensor_device
-        dct['ensure'] = ensure
-        
-        # Now, handle wrapping specific methods to apply the transform
-        transform_methods = dct.get('_transform_methods', [])
+		# Now call the actual __init__ from the child
+		cls.__init__(obj, *args, **kwargs)
 
-        for key, value in dct.items():
-            if callable(value) and key in transform_methods:
-                # Wrap the method to apply Transform to input
-                original_func = value
-                def wrapped_func(self, X, *args, **kwargs):
-                    X = self.ensure(X)  # Apply Transform
-                    return original_func(self, X, *args, **kwargs)
-                dct[key] = wrapped_func
-        
-        return super().__new__(cls, name, bases, dct)
+		
+		# Call base's after_init (if exists)
+		base_after_init = getattr(super(cls, obj), "after_init", None)
+		if callable(base_after_init):
+			base_after_init()
 
-class BaseModel(ABC):
+		transform_methods = getattr(obj, '_to_device_methods', [])
+		for name in transform_methods:
+			method = getattr(obj, name, None)
+			if callable(method):
+				def make_wrapper(func):
+					def wrapped_func(self, X, *a, **kw):
+						X = self.ensure(X)
+						return func(X, *a, **kw)
+					return wrapped_func
+				wrapped = make_wrapper(method).__get__(obj)
+				setattr(obj, name, wrapped)
+		return obj
+
+
+class CombinedMeta(EnsureMeta, ABCMeta):
+	pass
+
+class BaseModel(ABC, metaclass=CombinedMeta):
 	"""
 	A Basis Object For models.
 
@@ -52,8 +47,10 @@ class BaseModel(ABC):
 	dependencies = []
 	optimize_return_labels = []
 
-	_transform_methods = ["optimize"]
-
+	_to_device_methods = ["forward", "encode", "decode", "embed", "get_loss", "get_action", "optimize"]
+	def after_init(self):
+		self.train()
+		self.set_optimizers()
 	def __init__(self, device = None, criterion = nn.MSELoss(), amp = False):
 		"""
 		Initializes Base model
@@ -69,44 +66,54 @@ class BaseModel(ABC):
 		self.params = []
 		self.objects = []
 		self.amp = amp
-		self.scaler = None
-		if self.amp:
-			self.scaler = GradScaler()
+		self.scaler = GradScaler(enabled=self.amp)
+		self.optimizers = None
 
-
-
-
+	def __call__(self, X):
+		return self.forward(X)
 
 	
-	@abstractmethod
+
 	def init_objects(self):
-		pass
+		self.criterion = self.objects[0]
 
-	@abstractmethod
-	def __call__(self,X):
-		pass
-
-	@abstractmethod
-	def optimize(self, X):
-		pass
-
-	def optimize_amp(self,X):
-		with autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
-			loss = self.get_loss(self.ensure(X))
+	
+	def optimize(self,X):
+		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
+			loss, return_loss = self.get_loss(X)
 		
-		self.optimizer_step(loss, self.scaler)
+		self.back_propagate(loss)
 
-		return loss
-	@self.ensure
+		return return_loss
+	
+	def test(self,X):
+		with torch.no_grad():
+			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
+				loss, return_loss = self.get_loss(self.ensure(X))
+		return return_loss
+	
+	@abstractmethod
 	def get_loss(self,X):
 		pass
-	def optimizer_step(self,loss, scaler):
+	@abstractmethod
+	def back_propagate(self,loss, scaler):
 		pass
 
 
-	@torch.no_grad()
-	def test(self, X):
-		pass
+	#==========================================================================================
+	def ensure_tensor_device(self, X):
+		if X is None:
+			return X
+		if not torch.is_tensor(X):
+			X = torch.tensor(X)
+		if X.device != self.device:
+			X = X.to(self.device, non_blocking=True)
+		return X
+	def ensure(self, X):
+		if isinstance(X, tuple):
+			return tuple(map(self.ensure_tensor_device, X))
+		else:
+			return self.ensure_tensor_device(X)
 
 	def train(self):
 		[net.train() for net in self.nets]
@@ -114,21 +121,18 @@ class BaseModel(ABC):
 	def eval(self):
 		[net.eval() for net in self.nets]
 		self.training = False
-	
-	def ensure_tensor_device(self, X):
-		if X is None:
-			return X
-		if not torch.is_tensor(X):
-			X = torch.tensor(X)  # Convert to tensor
-		if X.device != self.device:
-			X = X.to(self.device,non_blocking=True)
-		return X
+	def set_optimizers(self):
+		if self.optimizers is None:
+			self.optimizers = [net.optimizer for net in self.nets]
+		for opt in self.optimizers:
+			opt.scaler = self.scaler    
 
-	def ensure(self, X):
-		if isinstance(X,tuple):
-			return tuple(map(self.ensure_tensor_device,X))
-		else:
-			return self.ensure_tensor_device(X)
+	def last_lr(self):
+		return [net.last_lr() for net in self.nets]
+	def scheduler_step(self):
+		for net in self.nets:
+			net.scheduler_step()
+
 	def save(self,file_name = None, return_dict=False):
 		save_dict = {
 			"params" : self.params,
@@ -138,13 +142,6 @@ class BaseModel(ABC):
 		if return_dict:
 			return save_dict
 		torch.save(save_dict, file_name + "/checkpoint.pt")
-
-	def last_lr(self):
-		return [net.last_lr() for net in self.nets]
-	def scheduler_step(self):
-		for net in self.nets:
-			net.scheduler_step()
-
 	@classmethod
 	def load(clss, file_name):
 		if isinstance(file_name, dict):
@@ -182,41 +179,26 @@ class Model(BaseModel):
 	print_args = classmethod(print_args)
 	dependencies = [Network]
 	optimize_return_labels = ["Loss"]
-	def __init__(self, network_params, device = None, criterion = nn.MSELoss()):
-		super().__init__(device = device, criterion=criterion)
+	def __init__(self, network_params, device = None, criterion = nn.MSELoss(), amp=True):
+		super().__init__(device = device, criterion=criterion, amp=amp)
 
 		self.net = Network(**network_params).to(self.device)
-
 		self.params = [network_params, device]
 		self.nets = [self.net]
 		self.objects = [criterion]
 
-		self.train()
 
-	def init_objects(self):
-		self.criterion = self.objects[0]
-
+	def forward(self,X):
+		return self.net(X)
 	
-	def __call__(self,X):
-		X = self.ensure(X)
-		outs = self.net(X)
-		return outs
-	
-	def optimize(self, X):
-		X,y = self.ensure(X)  
+	def get_loss(self,X):
+		X,y= X
 		outs = self(X)
 
 		loss = self.criterion(outs,y)
+		return loss, loss.item()
+
+	def back_propagate(self,loss):
 		self.net.back_propagate(loss)
 
-		return loss.item()
-
-	def test(self, X):
-		X,y = self.ensure(X)  
-		
-
-		with torch.no_grad():
-			outs = self(X)
-			loss = self.criterion(outs,y)	
-
-		return loss.item()
+	

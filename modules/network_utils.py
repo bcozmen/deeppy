@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from torch.amp import GradScaler
+
 from deeppy.utils import print_args
 #Should be more generalized with arguments
 class Scheduler():
@@ -31,6 +33,7 @@ class Optimizer():
 			self.model = model
 			self.optimizer = optimizer(self.model.parameters() , **optimizer_args)
 		
+		self.scaler = GradScaler(enabled=False)
 		self.clipper = clipper
 		self.clipper_params = clipper_params
 
@@ -38,19 +41,22 @@ class Optimizer():
 		if scheduler_params is not None:
 			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
 	
-	def step(self,loss = None, scaler = None):
-		if loss is not None:
-			self.optimizer.zero_grad()
-			loss.backward()
+	def step(self,loss):
+		self.optimizer.zero_grad(set_to_none=True)
+
+
+		self.scaler.scale(loss).backward()
 
 		if self.clipper is not None:
+			self.scaler.unscale_(self.optimizer)
 			if self.nn_model:
 				self.clipper(self.model.parameters(), **self.clipper_params)
 			else:
 				params = [p for group in self.model for p in group["params"]]
 				self.clipper(params, **self.clipper_params)
 
-		self.optimizer.step()
+		self.scaler.step(self.optimizer)
+		self.scaler.update()
 
 		if self.scheduler is not None and self.scheduler.auto_step:
 			self.scheduler.step()
@@ -64,7 +70,8 @@ class Optimizer():
 			"optimizer" : self.optimizer.state_dict(),
 			"clipper" : self.clipper,
 			"clipper_params" : self.clipper_params,
-			"scheduler" : sch
+			"scheduler" : sch,
+			"scaler" : self.scaler,
 		}
 
 	def load_states(self, dic):
@@ -72,6 +79,7 @@ class Optimizer():
 		self.clipper = dic["clipper"]
 
 		self.optimizer.load_state_dict(dic["optimizer"])
+		self.scaler = dic["scaler"]
 		if self.scheduler is not None:
 			self.scheduler.scheduler.load_state_dict(dic["scheduler"])
 

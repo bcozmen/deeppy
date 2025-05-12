@@ -18,9 +18,9 @@ class Sane(BaseModel):
 		input_dim= 201, latent_dim = 128, projection_dim = 30,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
 		gamma = 0.5, ntx_temp = 0.1,
-		device = None, torch_compile = False):
+		device = None, amp = False,torch_compile = False):
 
-		super().__init__(device= device)
+		super().__init__(device= device, amp=amp)
 
 		self.torch_compile = torch_compile
 
@@ -58,33 +58,29 @@ class Sane(BaseModel):
 		self.nets = [self.autoencoder, self.project]
 		self.params = [self.autoencoder_params, self.project_params]
 		self.objects = [self.recon_crit, self.ntx_crit]
-		self.train()
-	
+		self.optimizers = [self.optimizer]
+
 	
 	def init_objects(self):
 		self.recon_crit, self.ntx_crit = self.objects	
-	
-	def __call__(self,X):
-		return self.forward(X)
 
-	@self.ensure
+
 	def forward(self, X):
 		X,p = X
-
 		z = self.autoencoder.encode((X,p))
 		zp = self.project(z)
 		y = self.autoencoder.decode((z,p))
 		return z, y, zp
-	@self.ensure
+
 	def encode(self,X):
 		return self.autoencoder.encode(X)
-	@self.ensure
+
 	def decode(self,X):
 		return self.autoencoder.decode(X)
-	@self.ensure
+
 	def embed(self,X):
 		return torch.mean(self.encode(X), dim=1)
-	@self.ensure
+
 	def get_loss(self,X):
 		x_i, p_i,m_i, x_j, p_j,m_j = X
 		z_i, y_i, zp_i = self((x_i, p_i))
@@ -101,46 +97,12 @@ class Sane(BaseModel):
 		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
 		return loss, loss.item()
 
-	def optimizer_step(self,loss,scaler):
-		self.optimizer.step(loss,scaler)
-
-	def optimize(self, X):
-		x_i, p_i,m_i, x_j, p_j,m_j = self.ensure(X)
-
-		z_i, y_i, zp_i = self((x_i, p_i))
-		z_j, y_j, zp_j = self((x_j, p_j))
-		# cat y_i, y_j and x_i, x_j, and m_i, m_j
-		x = torch.cat([x_i, x_j], dim=0)
-		y = torch.cat([y_i, y_j], dim=0)
-		m = torch.cat([m_i, m_j], dim=0)
-		# compute loss
-
-		recon_loss = self.recon_crit(y*m,x)
-		ntx_loss = self.ntx_crit(zp_i, zp_j)
-		
-		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
-
+	def back_propagate(self,loss):
 		self.optimizer.step(loss)
 
-		return loss
-		
-	@torch.no_grad()
-	def test(self, X):
-		x_i, p_i,m_i, x_j, p_j,m_j = self.ensure(X)
+	# =====================================================================
 
-		z_i, y_i, zp_i = self((x_i, p_i))
-		z_j, y_j, zp_j = self((x_j, p_j))
-		# cat y_i, y_j and x_i, x_j, and m_i, m_j
-		x = torch.cat([x_i, x_j], dim=0)
-		y = torch.cat([y_i, y_j], dim=0)
-		m = torch.cat([m_i, m_j], dim=0)
-		# compute loss
 
-		recon_loss = self.recon_crit(y*m,x)
-		ntx_loss = self.ntx_crit(zp_i, zp_j)
-		
-		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
-		return loss
 	def build_autoencoder(self):
 		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())

@@ -9,8 +9,8 @@ class B_Vae(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
 	optimize_return_labels = ["Loss", "MSE Loss", "KL Loss"]
-	def __init__(self, network_params,  beta,  device = None, criterion = nn.MSELoss()):
-		super().__init__(device= device, criterion = criterion)
+	def __init__(self, network_params,  beta,  device = None, criterion = nn.MSELoss(), amp = False,):
+		super().__init__(device= device, criterion = criterion, amp=amp)
 		self.beta = beta
 		self.network_params = network_params
 
@@ -18,22 +18,18 @@ class B_Vae(BaseModel):
 		
 		self.params = [network_params,  beta,  device, criterion ]
 		self.nets = [self.net]
-		self.train()
+		self.objects = [self.criterion]
 	
-	def init_objects(self):
-		pass	
 
-	def __call__(self, X):
-		X = self.ensure(X)
+	def forward(self,X):
 		latent = self.net.encode(X)
 		z, mu, logvar = self.reparametrize(latent)
 		y_pred = self.net.decode(z)
 
 		return y_pred, mu, logvar
-	@self.ensure
 	def encode(self,X):
 		return self.net.encode(X)
-	@self.ensure
+
 	def decode(self,X):
 		return self.net.decode(X)
 
@@ -43,31 +39,9 @@ class B_Vae(BaseModel):
 		kl_loss = self.kl_loss(mu, logvar)
 		loss = con_loss + self.beta * kl_loss
 		return loss, (loss.item(), con_loss.item(), kl_loss.item())
-	def optimizer_step(self,loss, scaler):
-		self.net.back_propagate(loss,scaler)
-	
-	def optimize(self, X):
-		X,y = self.ensure(X)
-		y_pred, mu, logvar = self(X)
-		con_loss = self.criterion(y_pred, y)  
-		kl_loss = self.kl_loss(mu, logvar)
-
-		loss = con_loss + self.beta * kl_loss
+	def back_propagate(self,loss):
 		self.net.back_propagate(loss)
-
-		return loss.item(), con_loss.item(), kl_loss.item()
-
-	@torch.no_grad()
-	def test(self, X):
-		X,y = self.ensure(X)
-		
-		y_pred, mu, logvar = self(X)
-	
-		con_loss = self.criterion(y_pred, y)  
-		kl_loss = self.beta * self.kl_loss(mu, logvar)
-		loss = con_loss + kl_loss
-
-		return loss.item(), con_loss.item(), kl_loss.item()
+	#===================
 	
 
 	def kl_loss(self, mu, logvar):

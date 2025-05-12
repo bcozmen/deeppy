@@ -48,7 +48,7 @@ class EnvData(Base):
         return  self.memory.sample(self.batch_size)
 
     def collect(self, model):
-        action = model.predict(self.state).to(self.device)
+        action = model(self.state).to(self.device)
 
         env_action = action.squeeze(0).numpy()
         if self.action_item:

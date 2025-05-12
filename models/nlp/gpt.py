@@ -11,8 +11,8 @@ class GPT(BaseModel):
 	optimize_return_labels = ["Loss"]
 	#test_return_labels = ["Accuracy"]
 	def __init__(self, optimizer_params, vocab_size = 3, embed_dim=48, num_heads=3, num_layers=3, context_size=11, dropout = 0.1, 
-		device = None, criterion = nn.CrossEntropyLoss(), torch_compile = False):
-		super().__init__(device = device, criterion=criterion)
+		device = None, criterion = nn.CrossEntropyLoss(), torch_compile = False, amp=False):
+		super().__init__(device = device, criterion=criterion, amp=amp)
 		self.torch_compile = torch_compile
 
 		self.vocab_size = vocab_size
@@ -29,40 +29,21 @@ class GPT(BaseModel):
 		self.nets = [self.net]
 		self.params = [network_params]
 		self.objects = [criterion]
-		self.train()
-	
-	def init_objects():
-		pass
-	def __call__(self,X):
-		return self.forward(X)
 
-	@self.ensure
+
+
 	def forward(self,X):
 		return self.net(X)
-	@self.ensure
+
 	def get_loss(self,X):
 		X,y = X
 		outs = self(X)
 		loss = self.criterion(outs.view(-1, outs.size(-1)),y.view(-1))
 		return loss, loss.item()
-	def optimizer_step(self,loss, scaler):
-		self.net.back_propagate(loss, scaler)
- 
-	def optimize(self, X):
-		X,y = self.ensure(X)  
-		outs = self(X)
-
-		loss = self.criterion(outs.view(-1, outs.size(-1)),y.view(-1))
+	def back_propagate(self,loss):
 		self.net.back_propagate(loss)
-
-		return loss.item()
-	@torch.no_grad()
-	def test(self, X):
-		X,y = self.ensure(X)  
-		outs = self(X)
-
-		loss = self.criterion(outs.view(-1, outs.size(-1)),y.view(-1))
-		return loss.item()
+ 
+	#===============================================================================
 
 	@torch.no_grad()
 	def generate(self, X, max_new_tokens, temperature=1.0, do_sample=False, top_k=None):

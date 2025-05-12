@@ -9,6 +9,7 @@ from deeppy import Network
 from deeppy.models import BaseModel
 
 from deeppy.models.rl.dqn import DDQN
+from torch.cuda.amp import GradScaler
 
 
 class SAC(BaseModel):
@@ -19,9 +20,9 @@ class SAC(BaseModel):
     dependencies = [Network, DDQN]
     optimize_return_labels = ["Mean Critic Loss", "Actor Loss", "Alpha Loss"]
     def __init__(self, ddqn_params, pnet_params, alpha_lr, gamma =0.99, target_entropy = -1. , 
-        device = None, criterion = nn.MSELoss(),
+        device = None, criterion = nn.MSELoss(), amp=False,
         mode = "discrete", continuous_action = torch.tanh):
-        super().__init__(device = device, criterion = criterion)
+        super().__init__(device = device, criterion = criterion, amp=amp)
 
         self.mode = mode
         self.continuous_action = continuous_action
@@ -49,20 +50,24 @@ class SAC(BaseModel):
         self.nets = [self.ddqn, self.policy_net]
         self.objects = [criterion]
 
-        self.train()
+        if self.amp:
+            print("AMP is not supported with this model")
+            self.amp=False
+            self.scaler = GradScaler(enabled=self.use_amp)
+            self.optimizers = []
 
 
-    def init_objects(self):
-        self.criterion = self.objects[0]
+
+
     def __call__(self,X):
         return self.predict(X)
-    @self.ensure
+
     def predict(self, X):
         with torch.no_grad():
             action, action_probs, log_pis = self.get_action(X)
         return action
 
-    @self.ensure
+
     def get_action(self, X):
         action_probs = self.policy_net(X) #(Batch, 2dim)
 
@@ -99,7 +104,7 @@ class SAC(BaseModel):
         return action, action_probs, log_action_probs
 
     def optimize(self, X):
-        state_batch, action_batch, next_state_batch,reward_batch, done = self.ensure(X)
+        state_batch, action_batch, next_state_batch,reward_batch, done = X
         """
         print(state_batch.shape)
         print(action_batch.shape)
