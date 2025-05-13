@@ -62,7 +62,7 @@ class Metric():
             labels = [["Reward"], ["Duration"]]
         else:
             data = [ [self.train_data, self.test_data]]
-            labels = [ [["Train " +lbl for lbl in self.train_labels], ["Test " +lbl for lbl in self.test_labels]]]
+            labels = [[["Train " +lbl for lbl in self.train_labels], ["Test " +lbl for lbl in self.test_labels]]]
         if self.plot_lr:
             data += [self.lrs]
             labels += ["Learning Rate"]

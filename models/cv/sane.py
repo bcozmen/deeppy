@@ -12,12 +12,12 @@ from deeppy.models import BaseModel
 class Sane(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
-	optimize_return_labels = ["Loss"]
+	optimize_return_labels = ["Loss", "Recon Loss", "NTX Loss", "Rot Loss"]
 
 	def __init__(self, optimizer_params, max_positions, 
 		input_dim= 201, latent_dim = 128, projection_dim = 30,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
-		gamma = 0.5, ntx_temp = 0.1,
+		gamma = [0.05,0.05], ntx_temp = 0.1,
 		device = None, amp = False,torch_compile = False):
 
 		super().__init__(device= device, amp=amp)
@@ -26,9 +26,10 @@ class Sane(BaseModel):
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp
+		self.class_crit = nn.MSELoss()
 		self.recon_crit = nn.MSELoss()
 		self.ntx_crit = NT_Xent(temp = ntx_temp)
-		self.gamma = gamma
+		self.gamma = torch.tensor(gamma)
 
 		
 		#Encoder
@@ -51,18 +52,19 @@ class Sane(BaseModel):
 		#Create Networks
 		self.autoencoder, self.autoencoder_params = self.build_autoencoder()
 		self.project , self.project_params = self.build_projection_head()
+		self.classify, self.classify_params = self.build_classifier()
 		self.optimizer = self.configure_optimizer()
 
 	
 		
-		self.nets = [self.autoencoder, self.project]
-		self.params = [self.autoencoder_params, self.project_params]
-		self.objects = [self.recon_crit, self.ntx_crit]
+		self.nets = [self.autoencoder, self.project, self.classify]
+		self.params = [self.autoencoder_params, self.project_params, self.classify_params]
+		self.objects = [self.recon_crit, self.ntx_crit, self.class_crit]
 		self.optimizers = [self.optimizer]
 
 	
 	def init_objects(self):
-		self.recon_crit, self.ntx_crit = self.objects	
+		self.recon_crit, self.ntx_crit, self.class_crit = self.objects	
 
 	def forward(self, X):
 		X,p = X
@@ -81,7 +83,8 @@ class Sane(BaseModel):
 		return torch.mean(self.encode(X), dim=1)
 
 	def get_loss(self,X):
-		x_i, p_i,m_i, x_j, p_j,m_j = X
+		x_i, p_i,m_i, x_j, p_j,m_j,y_rot = X
+
 		z_i, y_i, zp_i = self((x_i, p_i))
 		z_j, y_j, zp_j = self((x_j, p_j))
 		# cat y_i, y_j and x_i, x_j, and m_i, m_j
@@ -90,18 +93,20 @@ class Sane(BaseModel):
 		m = torch.cat([m_i, m_j], dim=0)
 		# compute loss
 
+		z_rot = self.classify(zp_i[:,0]) #[B_size x 3]
+
+		class_loss = self.class_crit(z_rot,y_rot)
 		recon_loss = self.recon_crit(y*m,x)
 		ntx_loss = self.ntx_crit(zp_i, zp_j)
 		
-		loss = (self.gamma * ntx_loss) + ((1 - self.gamma) * recon_loss)
-		return loss, loss.item()
+		loss = (self.gamma[0] * ntx_loss) + ((1 - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * class_loss)
+		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), class_loss.item())
 
 	def back_propagate(self,loss):
 		self.optimizer.step(loss)
 
 	# =====================================================================
-
-
+	
 	def build_autoencoder(self):
 		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
@@ -173,7 +178,6 @@ class Sane(BaseModel):
 			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
 			"block_args":[{"bias" : self.bias}, {"normalized_shape":self.projection_dim}],
 			"out_act": nn.ReLU,
-			"out_params":{},
 			"weight_init":"uniform",
 		}
 
@@ -183,9 +187,25 @@ class Sane(BaseModel):
 		}
 		return Network(**network_params).to(self.device), network_params
 
-
+	def build_classifier(self):
+		arch_params = {
+			"blocks":[nn.Linear],
+			"block_args":[
+				{
+					"in_features": self.latent_dim,
+					"out_features" : 3,
+				},
+			],
+			"out_act": nn.Identity,
+			"weight_init":"uniform",
+		}
+		network_params = {
+			"arch_params": [arch_params],
+			"torch_compile" : self.torch_compile,
+		}
+		return Network(**network_params).to(self.device), network_params
 	def configure_optimizer(self):
-		params = itertools.chain(self.autoencoder.named_parameters(), self.project.named_parameters())
+		params = itertools.chain(*[k.named_parameters() for k in model.nets])
 		param_dict = {pn: p for pn, p in params}
 		param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
 

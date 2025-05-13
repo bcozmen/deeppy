@@ -24,8 +24,11 @@ class IngpData(Dataset):
 
     def __getitem__(self, idx):
         file_path, transform = self.all_objects[idx]
-        (model, position, mask, augment, position, mask) = tuple(map(self.cut_model, self.get_augmented_weights(file_path)))
-        return model, position, mask, augment, position, mask
+        (model, position, mask, augment, position, mask) = self.cut_model(self.get_augmented_weights(file_path))
+        
+        rot = transform["scene_info"]["current_rotation"]
+        rot = torch.deg2rad(torch.tensor(rot))
+        return model, position, mask, augment, position, mask, rot
 
 
     def load_object_paths(self):
@@ -53,10 +56,9 @@ class IngpData(Dataset):
         augment = self.add_noise(augment)
         return (model, position, mask, augment, position, mask)
 
-    def cut_model(self,model):
-        start = torch.randint(model.shape[0]-self.window_size, size = (1,)).item()
-        model = model[start:start + self.window_size]
-        return model
+    def cut_model(self,models):
+        start = torch.randint(models[0].shape[0]-self.window_size, size = (1,)).item()
+        return (m[start:start + self.window_size] for m in models)
 
     def create_mask(self,model):
         return mask
