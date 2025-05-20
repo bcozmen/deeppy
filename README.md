@@ -64,7 +64,7 @@
 
 > 💡 Minimal examples to see Deeppy in action in under 1 minute.
 
-<details open>
+<details>
 <summary>🧠 <strong>Train Your Own GPT Model</strong></summary>
 
 
@@ -187,7 +187,7 @@ lf.load(file_name)
 </details>
 
 
-## 📚 Explore More Tutorials
+# 📚 Explore More Tutorials
 
 Looking to dive deeper? We've included hands-on examples covering everything from GPT training to reinforcement learning agents like LunarLander.
 
