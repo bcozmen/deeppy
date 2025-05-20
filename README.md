@@ -3,8 +3,7 @@
 **Deeppy** is a flexible deep learning framework built on **PyTorch**, designed to simplify training workflows while supporting powerful research capabilities. It embraces a **modular approach** by **decoupling data, algorithms, and neural networks**, making it easy to swap components, experiment with new ideas, and customize pipelines end-to-end.
 
 
-
-### ✨ Key Features
+## ✨ Key Features
 
 - 🔧 **Modular by Design** – Swap networks, algorithms, and data pipelines easily  
 - 💡 **Research-Oriented** – Designed for flexibility and prototyping  
@@ -12,7 +11,7 @@
 - 🔍 **XAI Tooling (Coming Soon)** – Make black-box models more interpretable  
 - ⚡ **Built with PyTorch** – GPU, torch compile and AMP support and compatibility by default  
 
-### 🧰 Current Models and Networks
+## 🧰 Current Models and Networks
 
 -    <details> <summary><strong>🕹️ Reinforcement Learning</strong></summary>
 
@@ -26,27 +25,27 @@
         
 </details>
 
-- <details> <summary><strong>📢 Natural Language Processing<strong></summary>
+- <details> <summary><strong>📢 Natural Language Processing</strong></summary>
 
-    - [⚙️  GPT](models/nlp/gpt.py) 
-        📝 [Tutorial](tutorials/GPT-tutorial.ipynb)
+	- [⚙️  GPT](models/nlp/gpt.py) 
+	📝 [Tutorial](tutorials/GPT-tutorial.ipynb)
 
 </details>
 
-- <details> <summary><strong>🖼️ Computer Vision<strong></summary>
+- <details> <summary><strong>🖼️ Computer Vision</strong></summary>
 
     - [⚙️  SANE](models/cv/sane.py) 📝 [Tutorial](tutorials/SANE_tutorial.ipynb.ipynb)
 
     - [⚙️  NeRF](models/cv/nerf.py) 
 </details>
 
-- <details> <summary><strong>🔍 Autoencoders<strong></summary>
+- <details> <summary><strong>🔍 Autoencoders</strong></summary>
 
     - [⚙️  B-VAE](models/autoencoder/b_vae.py) 
     
 </details>
 
-- <details> <summary><strong>🔬 Basic Model<strong></summary>
+- <details> <summary><strong>🔬 Basic Model</strong></summary>
 
     - [⚙️  Model](models/base_model.py) 
         
@@ -55,14 +54,12 @@
         📝 [Advanced Tutorial](tutorials/networks_advanced.ipynb)
 
 </details>
-</div>
+
 
 
 
 
 # ⚡ Quickstart Demos
-
-> 💡 Minimal examples to see Deeppy in action in under 1 minute.
 
 <details>
 <summary>🧠 <strong>Train Your Own GPT Model</strong></summary>
@@ -92,7 +89,7 @@ GPT_params = {
     "criterion":nn.CrossEntropyLoss(ignore_index = -1),
 }
 
-model = GPT(**GPT_params)
+model = GPT(GPT_params)
 ```
 📊 Total Parameters: ~28.9M
 
@@ -157,7 +154,7 @@ policy_network = {
 ``` 
 ### ⚙️ Step 3: Choose a RL Algorithm
 ```python
-model = dp.SAC(**sac_params) #Soft Actor Critic
+model = dp.SAC(sac_params) #Soft Actor Critic
 ``` 
 ### 🧪 Step 4: Train the Agent
 ```python
@@ -189,9 +186,10 @@ lf.load(file_name)
 
 # 📚 Explore More Tutorials
 
+
 Looking to dive deeper? We've included hands-on examples covering everything from GPT training to reinforcement learning agents like LunarLander.
 
-📂 **Find them all in the [`tutorials/`](tutorials) folder**.
+📂 Find them all in the [`tutorials/`](tutorials) folder.
 
 
 
