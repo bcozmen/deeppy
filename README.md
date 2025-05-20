@@ -1,21 +1,74 @@
+# 🔩 Deeppy
+
+**Deeppy** is a flexible deep learning framework built on **PyTorch**, designed to simplify training workflows while supporting powerful research capabilities. It embraces a **modular approach** by **decoupling data, algorithms, and neural networks**, making it easy to swap components, experiment with new ideas, and customize pipelines end-to-end.
 
 
-# deeppy
 
-Built on PyTorch, Deeppy is a deep learning framework designed to make model training both simple and flexible.
+### ✨ Key Features
 
-It embraces a modular approach by decoupling data, algorithms, and neural networks, allowing easy swapping of components and experimentation.
+- 🔧 **Modular by Design** – Swap networks, algorithms, and data pipelines easily  
+- 💡 **Research-Oriented** – Designed for flexibility and prototyping  
+- 📉 **Integrated Plotting & Logging** – Visualize your training instantly  
+- 🔍 **XAI Tooling (Coming Soon)** – Make black-box models more interpretable  
+- ⚡ **Built with PyTorch** – GPU, torch compile and AMP support and compatibility by default  
 
-With the planned integration of XAI tools, Deeppy will offer clearer insights into training processes and model behavior.
-##
+### 🧰 Current Models and Networks
 
-## Train Your Own GPT
-<details>
-	
-<summary>See Demo</summary>
+-    <details> <summary><strong>🕹️ Reinforcement Learning</strong></summary>
+
+        - [⚙️  DQN](models/rl/dqn.py) 
+            📝 [Tutorial](tutorials/RL_algorithm_tutorials.ipynb)
+
+        - [⚙️  Double DQN](models/rl/dqn.py) - 📝 [Tutorial](tutorials/RL_algorithm_tutorials.ipynb)
 
 
-### 1 - Create Your Dataset
+        - [⚙️  SAC](models/rl/sac.py) - 📝 [Tutorial](tutorials/RL_algorithm_tutorials.ipynb)
+        
+</details>
+
+- <details> <summary><strong>📢 Natural Language Processing<strong></summary>
+
+    - [⚙️  GPT](models/nlp/gpt.py) 
+        📝 [Tutorial](tutorials/GPT-tutorial.ipynb)
+
+</details>
+
+- <details> <summary><strong>🖼️ Computer Vision<strong></summary>
+
+    - [⚙️  SANE](models/cv/sane.py) 📝 [Tutorial](tutorials/SANE_tutorial.ipynb.ipynb)
+
+    - [⚙️  NeRF](models/cv/nerf.py) 
+</details>
+
+- <details> <summary><strong>🔍 Autoencoders<strong></summary>
+
+    - [⚙️  B-VAE](models/autoencoder/b_vae.py) 
+    
+</details>
+
+- <details> <summary><strong>🔬 Basic Model<strong></summary>
+
+    - [⚙️  Model](models/base_model.py) 
+        
+        📝 [Introduction Tutorial](tutorials/introduction.ipynb) 
+    
+        📝 [Advanced Tutorial](tutorials/networks_advanced.ipynb)
+
+</details>
+</div>
+
+
+
+
+# ⚡ Quickstart Demos
+
+> 💡 Minimal examples to see Deeppy in action in under 1 minute.
+
+<details open>
+<summary>🧠 <strong>Train Your Own GPT Model</strong></summary>
+
+
+### 📝 Step 1: Load Your Dataset
 
 ```python
 with open("assets/shakespeare.txt", "r", encoding = "utf-8") as f:
@@ -25,7 +78,7 @@ encoding = tiktoken.encoding_for_model("gpt-2")
 data = GPTText(text=text, tokenizer=encoding, context_size = context_size)
 ```
 
-### 2 - Create a GPT Model
+### 🧱 Step 2: Build the GPT-Model
 
 ```python
 GPT_params = {
@@ -41,8 +94,9 @@ GPT_params = {
 
 model = GPT(**GPT_params)
 ```
-Total parameters : 28.895232 Million
-### 3 - And Finally:
+📊 Total Parameters: ~28.9M
+
+### 🔁 Step 3: Train the Model
 ```python
 lf = LearnFrame(model,data)
 
@@ -52,7 +106,7 @@ lf.plot(show_result=True, log=True)
 ```
 ![](tutorials/assets/GPT.png)
 
-### 4 - And Generate New Text
+### ✍️ Step 4: Generate Text
 ```python
 model.generate("KING RICHARD III: \n On this very beautiful day, let us")
 ```
@@ -78,14 +132,13 @@ I thank you, good my lord; I'll to your your daughter.
 KING EDWARD IV:
 
 Now, by the jealous queen
+
 </details>
 
-## Or Play a Game
+<details> <summary>🎮 <strong>Train a RL Agent</strong></summary>
 
-<details>
-<summary>See Demo</summary>
 	
-### 1 - Create Your Dataset
+### 🌍 Step 1: Set Up Environment
 
 ```python
 import deeppy as dp
@@ -93,7 +146,7 @@ import deeppy as dp
 env = gym.make("LunarLander-v1")
 data = dp.EnvData(env, buffer_size=100000)
 ```  
-### 2 - Create Your Neural-Network
+### 🧠 Step 2: Create Your Network
 ```python
 policy_network = {
     "layers" : [obs,128,128,act],
@@ -102,11 +155,11 @@ policy_network = {
     "weight_init" : "uniform"
 }
 ``` 
-### 3- Choose an Algorithm
+### ⚙️ Step 3: Choose a RL Algorithm
 ```python
 model = dp.SAC(**sac_params) #Soft Actor Critic
 ``` 
-### 4-And Finally:
+### 🧪 Step 4: Train the Agent
 ```python
 lf = dp.LearningFrame(model, data)
 
@@ -120,12 +173,12 @@ lf.plot()
 ``` 
 ![](tutorials/assets/plot.jpg)
 
-### 5- Watch Your Agent Play
+### 🎥 Step 5: Watch Your Agent
 ```python
 lf.get_anim()
 ``` 
 ![](tutorials/assets/lunarlander.gif)
-### 6- Easily Save-Load Your Models
+### 💾 Step 6: Save / Load Your Model
 ```python
 lf.save(file_name)
 lf.load(file_name)
@@ -133,112 +186,45 @@ lf.load(file_name)
 
 </details>
 
-For tutorials and examples please see [tutorials](tutorials)
-###
-# Setup
+
+## 📚 Explore More Tutorials
+
+Looking to dive deeper? We've included hands-on examples covering everything from GPT training to reinforcement learning agents like LunarLander.
+
+📂 **Find them all in the [`tutorials/`](tutorials) folder**.
+
+
+
+
+
+# 🛠️ Setup
 ```bash
 pip install -r requirements.txt
 ```
-# Documentation
+# 📖 Documentation
 
-Working on it :)
+Documentation is in progress. Meanwhile, refer to the tutorials folder.
 
 ![](tutorials/assets/diagram.png)
 
-# Currently Implemented Algorithms
-### Reinforcement Learning
-<details>
- 
-For tutorials and examples please see [tutorials](tutorials/RL_algorithm_tutorials.ipynb)
 
-[DQN](models/rl/dqn.py)
-<details>
-<summary> Papers</summary>
-       
-        DQN        - [https://arxiv.org/abs/2201.07211]
-        Double DQN - [https://arxiv.org/abs/1509.06461]
-</details>
+# 🧪 To-Do / Planned Features
 
-[Double DQN](models/rl/dqn.py)
-<details>
-<summary> Papers</summary>
-
-                   - https://arxiv.org/pdf/1910.07207
-</details>
-
-
-[SAC](models/rl/sac.py)
-<details>
-<summary>Papers</summary>
-
-        Discrete   - https://arxiv.org/abs/1910.07207
-        Continuous - https://arxiv.org/abs/1812.05905
-</details> 
-</details>
-
-### Computer Vision
-<details>
-[SANE](models/cv/sane.py)
-<details>
-<summary>Papers</summary>
-	               - https://arxiv.org/html/2406.09997v1#bib.bib39
-</details> 
-[NeRF](models/cv/nerf.py)
-<details>
-<summary>Papers</summary>
-	               - https://arxiv.org/pdf/2003.08934
-</details> 
-</details>
-
-### Auto-Encoder
-
-<details>
-
-[B-Vae](models/autoencoder/b_vae.py)
-<details>
-<summary>Papers</summary>
-	               - https://openreview.net/forum?id=Sy2fzU9gl
-</details> 
-</details>
-
-### Basic-Model
-
-<details>
-<summary>See Details</summary>
-
-For tutorials and examples please see [tutorials](tutorials/introduction.ipynb)
-
-</details>
-
-### GPT
-<details>
-<summary>See Details</summary>
-
-For tutorials and examples please see [tutorials](tutorials/GPT-tutorial.ipynb)
-
-</details>
-
-
-# To do
 ### RL
 
+<details> <summary><strong>RL</strong></summary>
 
-<details>
-<summary>See Details</summary>
+Dueling DQN
 
-[Dueling DQN]
+PPO
 
-[PPO]
+MBPO (Model-Based Policy Optimization)
 
-[Model Based Policy Optimization (MBPO)]
+SafeMBPO
 
-[SafeMBPO]
 </details>
 
-
 ### XAI Tools (Explainable AI)
-
-### CV - NERF
 
 ### Neuroevolution
 
