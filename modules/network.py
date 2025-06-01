@@ -6,13 +6,41 @@ from deeppy.modules.network_utils import LayerGenerator, Optimizer
 
 
 class Network(nn.Module):
+	"""
+	A class to handle pytorch networks
+
+	Optimizer(grad clipping and Scheduler), Weight initializers, and the Network itself is wrapped under this class
+
+	...
+
+	Attributes
+	----------
+	torch_compile : Bool
+		If use torch.compile
+	task : string, one of ["reg","autoencoder", "classify"]
+		If reg is used the network works as expected. 
+		If classify is used, the last layer will do classify based on classify_threshold (> or <)
+		If autoencoder is used, the network will consist of an encoder and decoder and self.encode - self.decode 
+		can be used to use just encoder or decoder functionality
+	classify_threshold : float
+		0.5 default - return (logits > self.classify_threshold).float()
+	arch_params : dict
+		Description of the network architecture. See LayerGenerator
+	decoder_params : dict
+		Description of the decoder architecture if the task is autoencoder
+	optimizer : None or Optimizer instance
+		The optimizer (it includes scheduler and gradient clipping)
+
+
+	"""
 	print_args = classmethod(print_args)
 	dependencies = [LayerGenerator, Optimizer]
-	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = None, torch_compile = False):
+	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = None, torch_compile = False, classify_threshold = 0.5):
 		super(Network, self).__init__()
 
 		self.torch_compile = torch_compile
 		self.task = task
+		self.classify_threshold = classify_threshold
 		if isinstance(arch_params, dict):
 			arch_params = [arch_params]
 		if isinstance(decoder_params, dict):
@@ -30,6 +58,7 @@ class Network(nn.Module):
 			self.optimizer = None
 		
 	def save_states(self):
+		#Save the network
 		try:
 			optimizer_dict = self.optimizer.save_states(),
 		except:
@@ -40,11 +69,13 @@ class Network(nn.Module):
 		}
 
 	def load_states(self, dic):
+		#Load the network
 		self.model.load_state_dict(dic["net"])
 		if self.optimizer is not None:
 			self.optimizer.load_states(dic["optimizer"])
 
 	def generate(self):
+		#Create the Network
 		layer_generator = LayerGenerator()
 		net = []
 
@@ -76,7 +107,7 @@ class Network(nn.Module):
 		logits = self.model(X)
 
 		if not self.training and self.task == "classify":
-			return (logits > 0.5).float()
+			return (logits > self.classify_threshold).float()
 		return logits
 
 

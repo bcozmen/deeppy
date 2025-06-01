@@ -165,7 +165,6 @@ class LearnFrame():
             Loss objects (shape depends on the algorithm)
         """
 
-        self.model.train()
         X = self.data.train_data()
 
         #For RL models, if start_size is not reached
@@ -184,7 +183,6 @@ class LearnFrame():
         
 
     def test(self):
-        self.model.eval()
         if isinstance(self.data, EnvData):
             dur, rew = self.data.emulate(self.model)
             self.metric.duration_data.append(dur)

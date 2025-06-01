@@ -28,7 +28,8 @@ class ClassMeta(type):
 				def make_wrapper(func):
 					def wrapped_func(self, X, *a, **kw):
 						X = self.ensure(X)
-						return func(X, *a, **kw)
+						r = func(X, *a, **kw)
+						return r
 					return wrapped_func
 				wrapped = make_wrapper(method).__get__(obj)
 				setattr(obj, name, wrapped)
@@ -40,8 +41,55 @@ class CombinedMeta(ClassMeta, ABCMeta):
 
 class BaseModel(ABC, metaclass=CombinedMeta):
 	"""
-	A Basis Object For models.
+	A Basis Object For models. Implements basic functionalities, optimize-test functions etc
 
+	When a new model is initialized, ensure_tensor_device function is appended before each method 
+	listed in _to_device_methods (See ClassMeta). Thus, once the torch.device is set, there is no need
+	to explicitely push the data into GPU or tensor form. 
+
+	When a new model is initialized, the function after_init is also called after the __init__ function,
+	to ensure that model is in training mode and the optimizers are set correctly
+	
+	The base model implements optimize and test methods. These methods uses get_loss for forward 
+	propagation + calculating the loss and back_propagate to backpropagate. Thus these 2 subfunctions must
+	be implemented by the developper of the model. 
+
+	To create a new model, the developper basically should initialize the model correctly and then implement 
+	forward, get_loss, and back_propaget functions
+
+	Network objects already by default come with optimizers (should be given as arguments) integrated. 
+	However for some implementations (when there are more than 1 Network object), it can be more efficient
+	to implement the optimizer in the Model class, as well as configuring them. (See cv/Sane model)
+
+	See class Model for example implementation
+	...
+
+	Attributes
+	----------
+		dependencies : List of classes used
+			The classes in dependencies are also printen when print_args is called
+		optimize_return_labels : List of strings:
+			The names of the losses returned by optimization
+		_to_device_methods : List of strings
+			Methods that should use ensure tensor device by default
+		device : torch device object
+			Torch device
+       	criterion : nn.Module object
+       		A criterion to calculate the loss function (For models with multiple criterions, this can be none)
+		training: bool
+			Flag to control if the pytorch in eval or training mode
+		nets : list
+			List to keep pytorch networks
+		params : list
+			List to keep network parameters
+		objects : list
+			List to keep objects implementd (like criterion)
+		amp : boolean
+			If use cuda amp
+		scaler : GradScaler
+			Necessery implementation for amp functionality
+		optimizers : list of nn.optim object
+			List of optimizers
 	"""
 	print_args = classmethod(print_args)
 	dependencies = []
@@ -54,10 +102,6 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def __init__(self, device = None, criterion = nn.MSELoss(), amp = False):
 		"""
 		Initializes Base model
-
-		Args:
-			device (torch.device): Device to be used
-			attr2 (type): Description of the second parameter.
 		"""
 		self.device = device
 		self.criterion = criterion
@@ -79,14 +123,17 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.criterion = self.objects[0]
 
 	def optimize(self,X):
+		self.train()
 		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
 			loss, return_loss = self.get_loss(X)
 		
 		self.back_propagate(loss)
 
+
 		return return_loss
 	
 	def test(self,X):
+		self.test()
 		with torch.no_grad():
 			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
 				loss, return_loss = self.get_loss(self.ensure(X))
@@ -98,10 +145,13 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	@abstractmethod
 	def back_propagate(self,loss, scaler):
 		pass
-
-
+	@abstractmethod
+	def forward(self,X):
+		pass
 	#==========================================================================================
+	#BASIC FUNCTIONALITY
 	def ensure_tensor_device(self, X):
+		#Make sure that data is torch tensors and on the correct device
 		if X is None:
 			return X
 		if not torch.is_tensor(X):
@@ -110,30 +160,37 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 			X = X.to(self.device, non_blocking=True)
 		return X
 	def ensure(self, X):
+		#Helper function for ensure tensor device
 		if isinstance(X, tuple):
 			return tuple(map(self.ensure_tensor_device, X))
 		else:
 			return self.ensure_tensor_device(X)
 
 	def train(self):
+		#Put the pytorch network in training mode
 		[net.train() for net in self.nets]
 		self.training = True
 	def eval(self):
+		#Put the pytorch network in eval mode
 		[net.eval() for net in self.nets]
 		self.training = False
 	def set_optimizers(self):
+		#Set the self.optimizer list
 		if self.optimizers is None:
 			self.optimizers = [net.optimizer for net in self.nets]
 		for opt in self.optimizers:
 			opt.scaler = self.scaler    
 
 	def last_lr(self):
+		#Net the last_lr if a scheduler is used
 		return [net.last_lr() for net in self.nets]
 	def scheduler_step(self):
+		#Take a scheduler step
 		for net in self.nets:
 			net.scheduler_step()
 
 	def save(self,file_name = None, return_dict=False):
+		#Save the model given a file name
 		save_dict = {
 			"params" : self.params,
 			"nets" : [net.save_states() for net in self.nets],
@@ -144,6 +201,8 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		torch.save(save_dict, file_name + "/checkpoint.pt")
 	@classmethod
 	def load(clss, file_name):
+		#Load the model from the class.
+		#First initialize a new object, and then load the checkpoint
 		if isinstance(file_name, dict):
 			checkpoint = file_name
 		else:
@@ -162,9 +221,11 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		return instance
 
 	def save_states(self):
+		#Helper function to save
 		return self.save(return_dict = True)
 
 	def load_states(self, dic):
+		#Helper function to load
 		params = dic["params"]
 		dicts = dic["nets"]
 		objs = dic["objs"]

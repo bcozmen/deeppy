@@ -7,6 +7,9 @@ from torch.amp import GradScaler
 from deeppy.utils import print_args
 #Should be more generalized with arguments
 class Scheduler():
+	"""
+	A scheduler wrapper to configure schedulers for Optimizer objects
+	"""
 	print_args = classmethod(print_args)
 	def __init__(self, optimizer, scheduler, auto_step = True, **kwargs):
 		self.auto_step = auto_step
@@ -16,6 +19,16 @@ class Scheduler():
 		self.scheduler.step()
 #CHECK OPTIMIZER SAVE LOAD IS CORRECT
 class Optimizer():
+	"""
+	A optimizer wrapper.
+
+	It combines nn.optim object with scheduler, gradient clipping and GradScaler if amp is used.
+
+	If the scheduler's auto_step parameter is True, every time optimizer takes a step, scheduler
+	takes a step too. Else, scheduler.step should be explicitely called by the user
+
+	As Model a nn.Module object or a list of parameters can be given
+	"""
 	print_args = classmethod(print_args)
 	dependencies = [Scheduler]
 
@@ -42,12 +55,17 @@ class Optimizer():
 			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
 	
 	def step(self,loss):
+		#Take a optimizer step
+
+		#Zero grade
 		self.optimizer.zero_grad(set_to_none=True)
 
-
+		#Compute gradients
 		self.scaler.scale(loss).backward()
 
+		#If there is clipper, clip the gradients
 		if self.clipper is not None:
+			#AMP step
 			self.scaler.unscale_(self.optimizer)
 			if self.nn_model:
 				self.clipper(self.model.parameters(), **self.clipper_params)
@@ -55,9 +73,11 @@ class Optimizer():
 				params = [p for group in self.model for p in group["params"]]
 				self.clipper(params, **self.clipper_params)
 
+		#Take a optimizer step
 		self.scaler.step(self.optimizer)
+		#Update scaler
 		self.scaler.update()
-
+		#If scheduler auto step take a scheduler step
 		if self.scheduler is not None and self.scheduler.auto_step:
 			self.scheduler.step()
 
@@ -114,13 +134,16 @@ class LayerGenerator():
 
 			layer = block(inp,out,**args)
 			net.append(layer)
-			if block.__name__ in ["RNN","LSTM", "GRU"]:
-				net.append(recurrent_layer_helper())
+
+			#if block.__name__ in ["RNN","LSTM", "GRU"]:
+			#	net.append(recurrent_layer_helper())
 
 			#Go for later blocks
 			for block,bargs in zip(blocks[1:], block_args[1:]):
 				#If its an activation function
 				if block.__name__ in self.activation_names:
+					#If it's the last layer, change activation with out_act
+					#Explicit is better than implicit
 					if ix == len(layers)-2:
 						block = out_act
 						bargs = out_params
@@ -180,5 +203,13 @@ class LayerGenerator():
 
 		if layer.bias is not None and self.weight_init is not None:
 			nn.init.zeros_(layer.bias)
+
+
+class WeightInit():
+	def __init__(self,parameters):
+		pass
+
+	def initialize(self, net):
+		pass
 
 
