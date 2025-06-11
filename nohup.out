@@ -1,0 +1,502 @@
+[W 09:24:07.031 NotebookApp] Loading JupyterLab as a classic notebook (v6) extension.
+[I 2025-06-11 09:24:07.033 LabApp] JupyterLab extension loaded from /home/baris/anaconda3/envs/rl/lib/python3.11/site-packages/jupyterlab
+[I 2025-06-11 09:24:07.033 LabApp] JupyterLab application directory is /home/baris/anaconda3/envs/rl/share/jupyter/lab
+[I 09:24:08.388 NotebookApp] Serving notebooks from local directory: /home/baris/berk/deeppy
+[I 09:24:08.388 NotebookApp] Jupyter Notebook 6.5.4 is running at:
+[I 09:24:08.388 NotebookApp] http://localhost:8888/?token=f981e7b180d3f017225d463831e9f4f43130d2368420f54d
+[I 09:24:08.388 NotebookApp]  or http://127.0.0.1:8888/?token=f981e7b180d3f017225d463831e9f4f43130d2368420f54d
+[I 09:24:08.388 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[C 09:24:08.406 NotebookApp] 
+    
+    To access the notebook, open this file in a browser:
+        file:///home/baris/.local/share/jupyter/runtime/nbserver-10706-open.html
+    Or copy and paste one of these URLs:
+        http://localhost:8888/?token=f981e7b180d3f017225d463831e9f4f43130d2368420f54d
+     or http://127.0.0.1:8888/?token=f981e7b180d3f017225d463831e9f4f43130d2368420f54d
+[W 09:24:08.520 NotebookApp] Clearing invalid/expired login cookie username-localhost-8888
+[W 09:24:08.522 NotebookApp] Forbidden
+[W 09:24:08.523 NotebookApp] 403 GET /api/kernels/23ef6b94-9ede-45fe-aaaa-0075fabbdddc?1749659047535 (127.0.0.1) 4.080000ms referer=http://localhost:8888/notebooks/tutorials/SANE_tutorial.ipynb
+[W 09:24:08.734 NotebookApp] Forbidden
+[W 09:24:08.735 NotebookApp] 403 GET /api/kernels?1749659048677 (127.0.0.1) 1.880000ms referer=http://localhost:8888/notebooks/tutorials/SANE_tutorial.ipynb
+[W 09:24:09.183 NotebookApp] Forbidden
+[W 09:24:09.184 NotebookApp] 403 GET /api/contents/tutorials/SANE_tutorial.ipynb/checkpoints?1749659049111 (127.0.0.1) 1.840000ms referer=http://localhost:8888/notebooks/tutorials/SANE_tutorial.ipynb
+[W 09:24:11.553 NotebookApp] Forbidden
+[W 09:24:11.554 NotebookApp] 403 GET /api/contents/tutorials/SANE_tutorial.ipynb/checkpoints?1749659051501 (127.0.0.1) 1.840000ms referer=http://localhost:8888/notebooks/tutorials/SANE_tutorial.ipynb
+[W 09:24:11.877 NotebookApp] 404 GET /api/events/subscribe?token=ec1ee0f55dec34b6d4ee4e3443a7944789971e0573363ece (127.0.0.1) 45.940000ms referer=None
+[W 09:24:13.790 NotebookApp] Forbidden
+[W 09:24:13.791 NotebookApp] 403 GET /api/contents/tutorials/SANE_tutorial.ipynb/checkpoints?1749659053620 (127.0.0.1) 1.640000ms referer=http://localhost:8888/notebooks/tutorials/SANE_tutorial.ipynb
+[W 09:24:14.277 NotebookApp] Forbidden
+[W 09:24:14.278 NotebookApp] 403 GET /api/kernels?1749659054060 (127.0.0.1) 1.560000ms referer=http://localhost:8888/notebooks/tutorials/SANE_tutorial.ipynb
+[W 09:24:17.273 NotebookApp] Forbidden
+[W 09:24:17.274 NotebookApp] 403 GET /api/contents/tutorials/SANE_tutorial.ipynb/checkpoints?1749659057088 (127.0.0.1) 1.630000ms referer=http://localhost:8888/notebooks/tutorials/SANE_tutorial.ipynb
+[I 09:24:17.462 NotebookApp] 302 GET /?token=f981e7b180d3f017225d463831e9f4f43130d2368420f54d (127.0.0.1) 0.760000ms
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[W 09:24:31.403 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:24:32.268 NotebookApp] Kernel started: 268a83a1-886d-41fc-987d-2591fafe6b12, name: python3
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:26:33.080 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:26:33.081 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+/home/baris/anaconda3/envs/rl/lib/python3.11/site-packages/nbformat/__init__.py:128: MissingIDFieldWarning: Code cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.
+  validate(nb)
+/home/baris/anaconda3/envs/rl/lib/python3.11/site-packages/notebook/services/contents/manager.py:353: MissingIDFieldWarning: Code cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.
+  validate_nb(model['content'])
+[I 09:28:04.089 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:28:04.921 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:28:05.178 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:28:05.248 NotebookApp] Replaying 3 buffered messages
+[I 09:28:32.704 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:28:32.705 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:30:33.274 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:30:33.275 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:34:33.878 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:34:33.880 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:35:04.886 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:35:05.542 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:35:06.060 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:35:06.074 NotebookApp] Replaying 6 buffered messages
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [96,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [97,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [98,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [99,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [100,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [101,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [102,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [103,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [104,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [105,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [106,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [107,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [108,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [109,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [110,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [111,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [112,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [113,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [114,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [115,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [116,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [117,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [118,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [119,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [120,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [121,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [122,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [123,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [124,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [125,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [126,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [51,0,0], thread: [127,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+[I 09:35:57.692 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:35:58.324 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:35:58.538 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:35:58.700 NotebookApp] Replaying 3 buffered messages
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [96,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [97,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [98,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [99,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [100,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [101,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [102,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [103,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [104,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [105,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [106,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [107,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [108,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [109,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [110,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [111,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [112,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [113,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [114,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [115,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [116,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [117,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [118,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [119,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [120,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [121,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [122,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [123,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [124,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [125,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [126,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+../aten/src/ATen/native/cuda/Indexing.cu:1292: indexSelectLargeIndex: block: [42,0,0], thread: [127,0,0] Assertion `srcIndex < srcSelectDimSize` failed.
+[I 09:36:33.637 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:36:33.638 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:39:02.526 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:39:03.226 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:39:03.544 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:39:04.055 NotebookApp] Replaying 3 buffered messages
+[I 09:40:33.414 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:40:33.415 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:42:33.327 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:42:33.328 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:43:04.600 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:43:04.600 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:43:42.100 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:43:42.651 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:43:42.873 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:43:42.968 NotebookApp] Replaying 3 buffered messages
+[I 09:44:33.239 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:44:33.240 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:46:30.018 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:46:30.728 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:46:30.975 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:46:31.488 NotebookApp] Replaying 3 buffered messages
+[I 09:46:33.258 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:46:33.259 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:48:33.307 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:48:33.308 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:49:51.235 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:49:51.868 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:49:52.102 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:49:52.204 NotebookApp] Replaying 3 buffered messages
+[I 09:50:33.277 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:50:33.278 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:51:08.609 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:51:09.252 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:51:09.482 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:51:09.558 NotebookApp] Replaying 3 buffered messages
+[I 09:52:33.191 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:52:33.192 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:54:33.268 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:54:33.269 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:55:25.061 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:55:25.590 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 09:55:26.158 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 09:55:26.166 NotebookApp] Replaying 3 buffered messages
+[I 09:56:33.195 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:56:33.196 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 09:58:33.250 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 09:58:33.251 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:02:33.308 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:02:33.309 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:04:33.332 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:04:33.333 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:07:45.958 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:07:47.092 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:07:47.410 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:07:47.422 NotebookApp] Replaying 198 buffered messages
+[I 10:08:33.194 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:08:33.195 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:10:33.300 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:10:33.301 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:10:45.745 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:10:46.476 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:10:47.041 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:10:47.055 NotebookApp] Replaying 3 buffered messages
+[I 10:11:17.900 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:11:18.539 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:11:18.796 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:11:19.307 NotebookApp] Replaying 3 buffered messages
+[I 10:12:33.330 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:12:33.331 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:12:38.264 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:12:39.002 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:12:39.219 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:12:39.325 NotebookApp] Replaying 3 buffered messages
+[I 10:14:33.669 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:14:33.671 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:17:17.634 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:17:18.637 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:17:19.068 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:17:19.073 NotebookApp] Replaying 199 buffered messages
+[I 10:18:33.420 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:18:33.421 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:20:33.477 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:20:33.479 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:21:57.657 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:21:58.299 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:21:58.550 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:21:58.669 NotebookApp] Replaying 3 buffered messages
+[I 10:22:33.669 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:22:33.670 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:25:00.793 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:25:01.530 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 10:25:01.708 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:25:01.897 NotebookApp] Replaying 3 buffered messages
+[I 10:25:42.262 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:c87c80ba26aa49dab74edef4c5f2a76a
+[I 10:39:38.259 NotebookApp] 302 GET / (127.0.0.1) 0.790000ms
+[I 10:39:38.400 NotebookApp] 302 GET /tree? (127.0.0.1) 1.240000ms
+[I 10:40:13.455 NotebookApp] 302 GET /?token=f981e7b180d3f017225d463831e9f4f43130d2368420f54d (127.0.0.1) 0.790000ms
+[W 10:40:20.249 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:40:34.208 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:40:34.209 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:41:41.140 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:37b5358a34f94f2693ee93111b250d1b
+[I 10:41:42.276 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:41:42.658 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:37b5358a34f94f2693ee93111b250d1b
+[I 10:41:42.670 NotebookApp] Replaying 199 buffered messages
+[I 10:42:00.186 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:37b5358a34f94f2693ee93111b250d1b
+[I 10:42:00.715 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:42:01.417 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:37b5358a34f94f2693ee93111b250d1b
+[I 10:42:01.429 NotebookApp] Replaying 5 buffered messages
+[I 10:42:38.414 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:37b5358a34f94f2693ee93111b250d1b
+[W 10:42:41.071 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:43:10.945 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:43:12.075 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:43:12.285 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:43:12.448 NotebookApp] Replaying 201 buffered messages
+[I 10:43:41.711 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:43:41.866 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:43:42.091 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:43:42.603 NotebookApp] Replaying 3 buffered messages
+[I 10:44:42.278 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:44:42.279 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:45:01.743 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:45:02.576 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:45:02.851 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:45:03.361 NotebookApp] Replaying 190 buffered messages
+[I 10:46:19.567 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:46:20.399 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:46:20.605 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:46:20.735 NotebookApp] Replaying 197 buffered messages
+[I 10:46:42.291 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:46:42.291 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:46:55.203 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:46:56.035 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:46:56.508 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:46:56.521 NotebookApp] Replaying 197 buffered messages
+[I 10:48:11.798 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:48:12.529 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:48:12.780 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:48:12.909 NotebookApp] Replaying 195 buffered messages
+[I 10:48:42.734 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:48:42.735 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:50:01.264 NotebookApp] Kernel interrupted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 10:50:02.903 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:50:03.734 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:50:03.984 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:50:04.064 NotebookApp] Replaying 3 buffered messages
+[I 10:50:42.180 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:50:42.676 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:50:42.677 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:50:42.847 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 10:50:43.030 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:50:43.151 NotebookApp] Replaying 3 buffered messages
+[I 10:50:59.121 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:50:59.848 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:51:00.121 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:51:00.125 NotebookApp] Replaying 6 buffered messages
+[I 10:51:19.295 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:51:19.925 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 10:51:20.113 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:51:20.280 NotebookApp] Replaying 3 buffered messages
+[I 10:51:37.726 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:51:38.257 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:51:38.721 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:51:38.733 NotebookApp] Replaying 5 buffered messages
+[I 10:51:53.803 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:51:54.330 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 10:51:54.512 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:51:54.639 NotebookApp] Replaying 3 buffered messages
+[I 10:52:12.951 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:52:13.680 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:52:13.946 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:52:14.457 NotebookApp] Replaying 3 buffered messages
+[I 10:52:19.197 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:52:19.322 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 10:52:19.491 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:52:19.644 NotebookApp] Replaying 3 buffered messages
+[I 10:52:36.915 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:52:37.546 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:52:38.008 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:52:38.011 NotebookApp] Replaying 5 buffered messages
+[I 10:52:42.452 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:52:42.454 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:52:55.448 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:52:55.979 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 10:52:56.137 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:52:56.648 NotebookApp] Replaying 3 buffered messages
+[I 10:53:15.519 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:53:16.250 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:53:16.722 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:53:16.733 NotebookApp] Replaying 3 buffered messages
+[I 10:53:33.337 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:53:33.868 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:53:34.081 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:53:34.233 NotebookApp] Replaying 3 buffered messages
+[I 10:53:55.660 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:53:56.187 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:53:56.398 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:53:56.518 NotebookApp] Replaying 3 buffered messages
+[I 10:54:15.424 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:54:15.954 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:54:16.244 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:54:16.756 NotebookApp] Replaying 3 buffered messages
+[I 10:54:38.361 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:54:38.992 NotebookApp] Kernel restarted: 268a83a1-886d-41fc-987d-2591fafe6b12
+0.00s - Debugger warning: It seems that frozen modules are being used, which may
+0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off
+0.00s - to python to disable frozen modules.
+0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.
+[I 10:54:39.567 NotebookApp] Restoring connection for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470
+[I 10:54:39.581 NotebookApp] Replaying 3 buffered messages
+[I 10:54:42.227 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:54:42.229 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 10:56:42.473 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 10:56:42.473 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 11:04:47.121 NotebookApp] Kernel interrupted: 268a83a1-886d-41fc-987d-2591fafe6b12
+[I 11:06:42.440 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 11:06:42.440 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 11:08:42.525 NotebookApp] Saving file at /tutorials/SANE_tutorial.ipynb
+[W 11:08:42.525 NotebookApp] Notebook tutorials/SANE_tutorial.ipynb is not trusted
+[I 11:09:35.798 NotebookApp] Starting buffering for 268a83a1-886d-41fc-987d-2591fafe6b12:98082fe3d0e7454fb82b428f30121470

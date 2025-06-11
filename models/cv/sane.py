@@ -93,7 +93,7 @@ class Sane(BaseModel):
 		m = torch.cat([m_i, m_j], dim=0)
 		# compute loss
 
-		z_rot = self.classify(zp_i[:,0]) #[B_size x 3]
+		z_rot = self.classify(z_i[:,0]) #[B_size x 3]
 
 		class_loss = self.class_crit(z_rot,y_rot)
 		recon_loss = self.recon_crit(y*m,x)
@@ -205,7 +205,7 @@ class Sane(BaseModel):
 		}
 		return Network(**network_params).to(self.device), network_params
 	def configure_optimizer(self):
-		params = itertools.chain(*[k.named_parameters() for k in model.nets])
+		params = itertools.chain(*[k.named_parameters() for k in self.nets])
 		param_dict = {pn: p for pn, p in params}
 		param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
 

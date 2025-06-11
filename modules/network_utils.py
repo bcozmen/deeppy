@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torch.amp import GradScaler
+from torch.cuda.amp import GradScaler
 
 from deeppy.utils import print_args
 #Should be more generalized with arguments
@@ -54,32 +54,38 @@ class Optimizer():
 		if scheduler_params is not None:
 			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
 	
-	def step(self,loss):
-		#Take a optimizer step
-
-		#Zero grade
+	def step(self, loss):
+		# Zero gradients
 		self.optimizer.zero_grad(set_to_none=True)
 
-		#Compute gradients
-		self.scaler.scale(loss).backward()
+		# Compute gradients
+		if self.scaler.is_enabled():
+			self.scaler.scale(loss).backward()
+		else:
+			loss.backward()
 
-		#If there is clipper, clip the gradients
+		# Optional gradient clipping
 		if self.clipper is not None:
-			#AMP step
-			self.scaler.unscale_(self.optimizer)
+			if self.scaler.is_enabled():
+				self.scaler.unscale_(self.optimizer)  # Required before clipping
+
 			if self.nn_model:
 				self.clipper(self.model.parameters(), **self.clipper_params)
 			else:
 				params = [p for group in self.model for p in group["params"]]
 				self.clipper(params, **self.clipper_params)
 
-		#Take a optimizer step
-		self.scaler.step(self.optimizer)
-		#Update scaler
-		self.scaler.update()
-		#If scheduler auto step take a scheduler step
-		if self.scheduler is not None and self.scheduler.auto_step:
+		# Optimizer step
+		if self.scaler.is_enabled():
+			self.scaler.step(self.optimizer)
+			self.scaler.update()
+		else:
+			self.optimizer.step()
+
+		# Scheduler step (if auto-stepping)
+		if self.scheduler is not None and getattr(self.scheduler, "auto_step", False):
 			self.scheduler.step()
+
 
 	def save_states(self):
 		if self.scheduler is None:
