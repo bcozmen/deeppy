@@ -29,7 +29,7 @@ class Sane(BaseModel):
 		self.class_crit = nn.MSELoss()
 		self.recon_crit = nn.MSELoss()
 		self.ntx_crit = NT_Xent(temp = ntx_temp)
-		self.gamma = torch.tensor(gamma)
+		self.gamma = torch.tensor(gamma).to(device)
 
 		
 		#Encoder
@@ -53,11 +53,9 @@ class Sane(BaseModel):
 		self.autoencoder, self.autoencoder_params = self.build_autoencoder()
 		self.project , self.project_params = self.build_projection_head()
 		self.classify, self.classify_params = self.build_classifier()
-		self.optimizer = self.configure_optimizer()
-
-	
-		
 		self.nets = [self.autoencoder, self.project, self.classify]
+		
+		self.optimizer = self.configure_optimizer()
 		self.params = [self.autoencoder_params, self.project_params, self.classify_params]
 		self.objects = [self.recon_crit, self.ntx_crit, self.class_crit]
 		self.optimizers = [self.optimizer]
@@ -98,8 +96,8 @@ class Sane(BaseModel):
 		class_loss = self.class_crit(z_rot,y_rot)
 		recon_loss = self.recon_crit(y*m,x)
 		ntx_loss = self.ntx_crit(zp_i, zp_j)
-		
-		loss = (self.gamma[0] * ntx_loss) + ((1 - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * class_loss)
+
+		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * class_loss)
 		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), class_loss.item())
 
 	def back_propagate(self,loss):
@@ -216,5 +214,7 @@ class Sane(BaseModel):
 			{"params": decay_params, "weight_decay": self.optimizer_params["optimizer_args"]["weight_decay"]},
 			{"params": nodecay_params, "weight_decay": 0.0},
 		]
+
+
 		del self.optimizer_params["optimizer_args"]["weight_decay"]
 		return Optimizer(optim_groups, **self.optimizer_params)

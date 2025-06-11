@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod,ABCMeta
 
 from deeppy.utils import print_args
 from deeppy.modules.network import Network
-from torch.cuda.amp import GradScaler
+from torch.amp import GradScaler
 
 class ClassMeta(type):
 	def __call__(cls, *args, **kwargs):
