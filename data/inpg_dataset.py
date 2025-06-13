@@ -1,3 +1,5 @@
+#LOAD HALF PRECISION ALWAYS
+
 from deeppy.data.base import Base
 
 
@@ -6,7 +8,150 @@ import torch
 import torch.nn as nn
 import glob
 import json
+
+class PtToHDF5():
+    def __init__(self):
+        pass
+
 class IngpData(Dataset):
+    def __init__(self, data_path, config, window_size = None, hash_chunk_size, token_size = None, max_layer_width = 64):
+        self.data_path = data_path
+        self.config = config
+
+        if self.token_size % self.max_layer_width != 0:
+            raise ValueError("Invalid token size or max_layer_width")
+
+        self.window_size = window_size
+        self.hash_chunk_size = hash_chunk_size
+        self.token_size = token_size
+        self.max_layer_width = max_layer_width
+        
+        self.load_object_paths()
+
+    def __len__(self):
+        return len(self.all_objects)
+    def __add__(self):
+        pass
+
+    def __getitem__(self, idx):
+        #Random index
+        file_path, transform = self.all_objects[idx]
+
+        obj1, obj2 = 1 #
+
+        t1,p1,m1 = self.get_object_sample(obj1)
+        t2,p2,m2 = self.get_object_sample(obj2)
+
+        start_chunk = torch.rand()
+        return t1, p1, m1, t2, p2, m2, r1, r2
+
+    def get_object_sample(self, obj_path):
+        #Sample (window_size - hash_chunk_size )points in 3D space (512,3)
+
+        #Turn them into hash indices (16 , 512, 8)
+        # (16, 512*8)
+
+        #(hash_chunk_size, token_size)
+        hash_t, hash_p, hash_m = self.load_hash_chunk(obj_path)
+        
+        #(window_size - hash_chunk_size, token_size)
+        mlp_t, mlp_p, mlp_m = self.load_mlp_weights(obj_path)
+
+        return torch.cat([hash_t, mlp_t]), torch.cat([hash_p, mlp_p]), torch.cat([hash_m, mlp_m])
+    
+    def load_hash_chunk(self, path, indices):
+        """
+        indices : (num_layers, num_points * 8) Tensor / numpy array
+        """
+        #(16,512*8)
+        return_data = []
+        with h5py.File(path, 'r') as f:
+            for i,ix in enumerate(indices):
+                dset = f[f"layer{i}"] 
+                chunk = dset[indices] # (512*8,2)
+                chunk = chunk.reshape(-1,8,2) #(512,8,2)
+                return_data.append(chunk)
+        
+        return_data = torch.from_numpy(np.asarray(return_data)) #(16,512,8,2)
+        #turn it to (512,8,16,2) and then flatten to (512,256)
+        mask = torch.ones_like(return_data)
+        #(1,256)
+        return return_data, pos, mask
+
+    def load_object_paths(self):
+        self.objects = glob.glob(self.data_path + "/*")
+        self.all_objects_2d = []
+        self.all_objects = []
+        for o in self.objects:
+            objs_path = glob.glob(o + "/*")
+            this_object = []
+            for in_obj in objs_path:
+                with open(in_obj + "/transforms.json", "r") as file:
+                    transform = json.load(file)
+                    del transform["frames"]
+                data = (in_obj + "/checkpoints/final.pth",transform)
+                this_object.append(data)
+                self.all_objects.append(data)
+            self.all_objects_2d.append(this_object)
+
+
+    
+
+    
+
+    def load_mlp_weights(self,path):
+        geometry_layers, view_layers = [], []
+        
+        with h5py.File(path, 'r') as f:
+            for i in range(3):
+                dset1, dset2= f["geometry_layers{i}"], f["view_layers{i}"]
+                chunk1, chunk2 = dset1, dset2
+                geometry_layers.append(self.tokenize_mlp_layer(chunk1))
+                view_layers.append(self.tokenize_mlp_layer(chunk2))
+        
+        #(6 , X , token_size) -> (1, 6X, token_size)
+        layers = geometry_layers + view_layers
+    def tokenize_mlp_layer(self, w):
+        pad = self.max_layer_width - w.shape[1]
+        mask = torch.ones_like(w)
+        
+        # w - > (x , max_layer_width)
+        if pad > 0:
+            w = nn.function.pad(w, (0, self.max_layer_width - w.shape[1]))
+            mask = nn.functional.pad(mask, (0,max_len - w.shape[1]))     
+        
+        n_layers_per_token = (self.token_size // self.max_layer_width)
+        pad_axis_0 = n_layers_per_token - (w.shape[0] % n_layers_per_token)
+        
+        # (x, max_layer_width) -> (n_layers_per_token *k , max_layer_width)
+        if pad_axis_0 > 0:
+            #pad
+
+        #(Group each 4 rows into one row)
+        
+        max_len = max(w.shape[1] for w in weights)
+
+        for ix,w in enumerate(weights):
+            mask = torch.ones_like(w)
+
+            x,y = w.shape
+            token = nn.functional.pad(w, (0, max_len - w.shape[1]))
+            mask = nn.functional.pad(mask, (0,max_len - w.shape[1]))
+            tokens.append(token)
+            masks.append(mask)
+
+            layer_ix = torch.full(size=(token.shape[0],1), fill_value=ix) 
+            layer_pos = torch.arange(token.shape[0]).unsqueeze(1)
+            positions.append(torch.cat((layer_ix,layer_pos), dim =1))
+
+        tokens, positions, masks = torch.cat(tokens), torch.cat(positions), torch.cat(masks)
+        positions =  torch.cat((torch.arange(positions.size(0)).unsqueeze(1),positions), dim=1)
+        # Pad each tensor to match max_len in second dimension
+
+        
+        return tokens, positions, masks
+            
+class IngpData_old(Dataset):
     def __init__(self,data_path, config, window_size = None):
         
 
