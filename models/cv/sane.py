@@ -81,21 +81,22 @@ class Sane(BaseModel):
 		return torch.mean(self.encode(X), dim=1)
 
 	def get_loss(self,X):
-		x_i, p_i,m_i, x_j, p_j,m_j,y_rot = X
+		x_1, p_1,m_1,r_1, x_2, p_2,m_2,r_2 = X
 
-		z_i, y_i, zp_i = self((x_i, p_i))
-		z_j, y_j, zp_j = self((x_j, p_j))
+		z_1, y_1, zp_1 = self((x_1, p_1))
+		z_2, y_2, zp_2 = self((x_2, p_2))
 		# cat y_i, y_j and x_i, x_j, and m_i, m_j
-		x = torch.cat([x_i, x_j], dim=0)
-		y = torch.cat([y_i, y_j], dim=0)
-		m = torch.cat([m_i, m_j], dim=0)
+		x = torch.cat([x_1, x_2], dim=0)
+		y = torch.cat([y_1, y_2], dim=0)
+		m = torch.cat([m_1, m_2], dim=0)
 		# compute loss
 
-		z_rot = self.classify(z_i[:,0]) #[B_size x 3]
+		z_rot1 = self.classify(z_1[:,0]) #[B_size x 3]
+		z_rot2 = self.classify(z_2[:,0]) #[B_size x 3]
 
-		class_loss = self.class_crit(z_rot,y_rot)
+		class_loss = self.class_crit(z_rot1,r_1) + self.class_crit(z_rot2,r_2)
 		recon_loss = self.recon_crit(y*m,x)
-		ntx_loss = self.ntx_crit(zp_i, zp_j)
+		ntx_loss = self.ntx_crit(zp_1, zp_2)
 
 		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * class_loss)
 		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), class_loss.item())
