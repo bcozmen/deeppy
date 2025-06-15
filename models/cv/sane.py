@@ -91,15 +91,15 @@ class Sane(BaseModel):
 		m = torch.cat([m_1, m_2], dim=0)
 		# compute loss
 
-		z_rot1 = self.classify(z_1[:,0]) #[B_size x 3]
-		z_rot2 = self.classify(z_2[:,0]) #[B_size x 3]
+		#z_rot1 = self.classify(z_1[:,0]) #[B_size x 3]
+		#z_rot2 = self.classify(z_2[:,0]) #[B_size x 3]
 
-		class_loss = self.class_crit(z_rot1,r_1) + self.class_crit(z_rot2,r_2)
+		#class_loss = self.class_crit(z_rot1,r_1) #+ self.class_crit(z_rot2,r_2)
 		recon_loss = self.recon_crit(y*m,x)
 		ntx_loss = self.ntx_crit(zp_1, zp_2)
 
-		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * class_loss)
-		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), class_loss.item())
+		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss)# + (self.gamma[1] * class_loss)
+		return loss, (loss.item(), recon_loss.item(), ntx_loss.item())#, class_loss.item())
 
 	def back_propagate(self,loss):
 		self.optimizer.step(loss)
