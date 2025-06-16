@@ -99,7 +99,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def after_init(self):
 		self.train()
 		self.set_optimizers()
-	def __init__(self, device = None, criterion = nn.MSELoss(), amp = False):
+	def __init__(self, device = None, criterion = nn.MSELoss(), amp = False, gradient_accumulation = 1):
 		"""
 		Initializes Base model
 		"""
@@ -113,6 +113,8 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.scaler = GradScaler(enabled=self.amp)
 		self.optimizers = None
 
+		self.gradient_accumulation = gradient_accumulation
+		self.epoch = 0
 	def __call__(self, X):
 		return self.forward(X)
 

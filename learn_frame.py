@@ -114,6 +114,28 @@ class Metric():
             else:
                 display.display(plt.gcf())
 
+    def gaussian_smooth(self, data, window_size=5):
+        """
+        Apply Gaussian smoothing to the data.
+        """
+        if len(data) < window_size:
+            return data
+        kernel = np.exp(-np.linspace(-1, 1, window_size)**2 / 0.5**2)
+        kernel /= kernel.sum()
+        smoothed_data = np.convolve(data, kernel, mode='valid')
+        return smoothed_data
+    
+    #implement uniform smoothing in a window
+    def uniform_smooth(self, data, window_size=5):
+        """
+        Apply uniform smoothing to the data.
+        """
+        if len(data) < window_size:
+            return data
+        kernel = np.ones(window_size) / window_size
+        smoothed_data = np.convolve(data, kernel, mode='valid')
+        return smoothed_data
+
 
 
 
