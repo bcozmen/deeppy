@@ -58,12 +58,11 @@ class FromLoader(Base):
         self.train_loader = train_loader
         self.test_loader = test_loader
         self.valid_loader = valid_loader
-    def train_data(self):
-        return tuple(next(iter(self.train_loader)))
-    def test_data(self):
-        return tuple(next(iter(self.test_loader)))
-    def valid_data(self):
-        return tuple(next(iter(self.valid_loader)))
+
+        self.train_iter = iter(self.train_loader)
+        self.test_iter = iter(self.test_loader)
+        self.valid_iter = iter(self.valid_loader)
+
     def save(self,file_name):
         print("Save for train loader is not possible. Please save your dataset")
     def load(self, file_name):
@@ -72,7 +71,7 @@ class FromLoader(Base):
 class DataGetter(Base):
     def __init__(self,X=None, y= None, X_valid = None, X_test = None, y_test = None, 
                  test_size = 0.2, test_batch_size = None, valid_batch_size = None,
-                 batch_size = 64, num_workers = 0, pin_memory=True, shuffle = True):
+                 batch_size = 64, num_workers = 0, pin_memory=True, shuffle = True, ):
         super().__init__(batch_size = batch_size, num_workers = num_workers, pin_memory = pin_memory, shuffle = shuffle)
 
         if test_size < 0 or test_size > 1:
@@ -109,12 +108,6 @@ class DataGetter(Base):
         self.test_loader = params["test_loader"]
         self.valid_loader = params["valid_loader"] 
 
-    def train_data(self):
-        return tuple(next(iter(self.train_loader)))
-    def test_data(self):
-        return tuple(next(iter(self.test_loader)))
-    def valid_data(self):
-        return tuple(next(iter(self.valid_loader)))
 
     def create_loaders(self):
         if self.test_batch_size is None:

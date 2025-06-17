@@ -18,13 +18,29 @@ class Base(ABC):
     def __len__(self):
         return len(self.train_loader) + len(self.test_loader)
 
-    @abstractmethod
     def train_data(self):
-        pass
+        try:
+            X = next(self.train_iter)
+        except:
+            self.train_iter = iter(self.train_loader)
+            X = next(self.train_iter)
+        return tuple(X)
+
     def test_data(self):
-        pass
+        try:
+            X = next(self.test_iter)
+        except:
+            self.test_iter = iter(self.test_loader)
+            X = next(self.test_iter)
+        return tuple(X)
+
     def valid_data(self):
-        pass
+        try:
+            X = next(self.valid_iter)
+        except:
+            self.valid_iter = iter(self.valid_loader)
+            X = next(self.valid_iter)
+        return tuple(X)
 
 
     @abstractmethod
