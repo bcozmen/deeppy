@@ -18,7 +18,7 @@ class IngpData(Dataset):
         self.config = config
 
         self.window_size = window_size
-        self.hash_chunk_size = self.window_size - 53 # 53 is the size of the MLP tokens
+        self.hash_chunk_size = self.window_size - 53 - 1# 53 is the size of the MLP tokens # And one for rotation index
         self.token_size = token_size
         self.max_layer_width = max_layer_width
 
@@ -27,8 +27,8 @@ class IngpData(Dataset):
         
         self.load_object_paths()
         
-        self.max_positions = self[0][1].max(axis=0).values + 1
-        self.max_positions[2] = (self.hash_table_indices_end[-1]  - self.hash_table_indices_end[-2] ).item()
+        self.max_positions = self[0][1].max(axis=0).values + 2
+        self.max_positions[2] = (self.hash_table_indices_end[-1]  - self.hash_table_indices_end[-2] ).item() + 1
 
 
     def __len__(self):
@@ -67,7 +67,10 @@ class IngpData(Dataset):
         mlp_t, mlp_p, mlp_m = self.load_mlp_weights(obj_path)        
         mlp_p[:,0] = torch.arange(self.hash_table_indices_end[-1].item()+1, self.hash_table_indices_end[-1].item()+1 + len(mlp_p[:,2]))  # Set position indices for MLP tokens
 
-        return torch.vstack([hash_t, mlp_t]), torch.vstack([hash_p, mlp_p]), torch.vstack([hash_m, mlp_m])
+        rot_t = torch.zeros((1,self.token_size), dtype=torch.float32)  
+        rot_p = torch.zeros((1,3), dtype=torch.int64)
+        rot_m = torch.zeros((1,self.token_size), dtype=torch.float32)  #
+        return torch.vstack([rot_t,hash_t, mlp_t]), torch.vstack([rot_p,hash_p+1, mlp_p+1]), torch.vstack([rot_m,hash_m, mlp_m])
     
 
     def load_hash_consecutive(self, path, global_indices):

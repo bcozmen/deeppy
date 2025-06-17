@@ -97,8 +97,8 @@ class Sane(BaseModel):
 		recon_loss = self.recon_crit(y*m,x)
 		
 		#Compute rotation loss
-		z_rot1 = z_1[:,0,:4] #[B_size x 4]
-		z_rot2 = z_2[:,0,:4] #[B_size x 4]
+		z_rot1 = self.classify(z_1[:,0,:4]) #[B_size x 4]
+		z_rot2 = self.classify(z_2[:,0,:4]) #[B_size x 4]
 		rot_loss = self.rot_crit(z_rot1, z_rot2, r_1, r_2)
 
 		#Compute NTX loss
@@ -198,8 +198,8 @@ class Sane(BaseModel):
 			"blocks":[nn.Linear],
 			"block_args":[
 				{
-					"in_features": self.latent_dim,
-					"out_features" : 3,
+					"in_features": 4,
+					"out_features" : 4,
 				},
 			],
 			"out_act": nn.Identity,
