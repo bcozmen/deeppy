@@ -133,12 +133,11 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 
 
 		return return_loss
-	
+	@torch.no_grad()
 	def test(self,X):
-		self.test()
-		with torch.no_grad():
-			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
-				loss, return_loss = self.get_loss(self.ensure(X))
+		self.eval()
+		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
+			loss, return_loss = self.get_loss(self.ensure(X))
 		return return_loss
 	
 	@abstractmethod
@@ -185,7 +184,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 
 	def last_lr(self):
 		#Net the last_lr if a scheduler is used
-		return [net.last_lr() for net in self.nets]
+		return [optimizer.scheduler.scheduler.get_last_lr()[0] for optimizer in self.optimizers]
 	def scheduler_step(self):
 		#Take a scheduler step
 		for net in self.nets:
@@ -233,6 +232,9 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		objs = dic["objs"]
 		for net,net_dicts in zip(self.nets, dicts):
 			net.load_states(net_dicts)
+
+	def print_param_count(self):
+		[net.print_param_count() for net in self.nets]
 
 	
 

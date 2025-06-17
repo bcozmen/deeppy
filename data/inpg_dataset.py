@@ -13,12 +13,9 @@ import h5py
 
 
 class IngpData(Dataset):
-    def __init__(self, data_path, config, window_size = None, token_size = None, max_layer_width = 64,  augment = False):
+    def __init__(self, data_path, config, window_size = None, token_size = None, max_layer_width = 64):
         self.data_path = data_path
         self.config = config
-        self.augment = augment
-
-        
 
         self.window_size = window_size
         self.hash_chunk_size = self.window_size - 53 # 53 is the size of the MLP tokens
@@ -35,70 +32,42 @@ class IngpData(Dataset):
 
 
     def __len__(self):
-        if self.augment:
-            return len(self.all_objects)
-        else:
-            return len(self.all_objects_2d)
-    def __add__(self):
-        pass
-
+        return len(self.all_objects_2d)
+    
     def __getitem__(self, idx):
         #Random index
         #Sample (window_size - hash_chunk_size )points in 3D space (512,3)
 
         #Turn them into hash indices (16 , 512, 8)
         # (16, 512*8)
-        if self.augment:
-            rand_ix = torch.randint(low=0, high=self.hash_table_indices_end[-1].item() - (self.hash_chunk_size), size=(1,)).item()
-            indices = torch.arange(rand_ix, rand_ix + self.hash_chunk_size)
-        else:
-            raise ValueError("Not implemented for non-augment mode")
+        
+        #Get random index as start index for hash chunk
+        rand_ix = torch.randint(low=0, high=self.hash_table_indices_end[-1].item() - (self.hash_chunk_size), size=(1,)).item()
+        indices = torch.arange(rand_ix, rand_ix + self.hash_chunk_size)
 
-        if self.augment:
-            path, transform = self.all_objects[idx]
+        
+        
+        #Get 2 random views of the object
+        object_parent_path = self.all_objects_2d[idx]
+        idx_child = torch.randperm(len(object_parent_path))[:2]
 
-            t1,p1,m1,a1 = self.get_object_sample(path, indices)
-            r1 = transform["scene_info"]["current_rotation"]
-            r1 = torch.deg2rad(torch.tensor(r1))
+        obj1_path, obj_1_transform = object_parent_path[idx_child[0]]
+        obj2_path, obj_2_transform = object_parent_path[idx_child[1]] 
 
-            #check if there is any none in returns
-            if torch.any(torch.isnan(t1)) or torch.any(torch.isnan(p1)) or torch.any(torch.isnan(m1)) or torch.any(torch.isnan(r1)):
-                print(f"NaN values found in object {path} at index {idx}")
-                return None, None, None, None, None, None, None, None
-            return t1, p1, m1, r1, a1, torch.clone(p1), torch.clone(m1), torch.clone(r1)
-        else:
-            object_parent_path = self.all_objects_2d[idx]
-            idx_child = torch.randperm(len(object_parent_path))[:2] 
-            obj1_path, obj_1_transform = object_parent_path[idx_child[0]]
-            obj2_path, obj_2_transform = object_parent_path[idx_child[1]]
+        (t1,p1,m1), r1 = self.get_object_sample(obj1_path, indices), obj_1_transform
+        (t2,p2,m2), r2 = self.get_object_sample(obj2_path, indices), obj_2_transform
 
-            t1,p1,m1,_ = self.get_object_sample(obj1, indices)
-            r1 = obj_1_transform["scene_info"]["current_rotation"]
-            r1 = torch.deg2rad(torch.tensor(r1))
-
-            t2,p2,m2,_ = self.get_object_sample(obj2, indices)
-            r2 = obj_2_transform["scene_info"]["current_rotation"]
-            r2 = torch.deg2rad(torch.tensor(r2))
-
-            #check if there is any none in returns
-            if torch.any(torch.isnan(t1)) or torch.any(torch.isnan(p1)) or torch.any(torch.isnan(m1)) or torch.any(torch.isnan(r1)) or \
-               torch.any(torch.isnan(t2)) or torch.any(torch.isnan(p2)) or torch.any(torch.isnan(m2)) or torch.any(torch.isnan(r2)):
-                print(f"NaN values found in object {obj1_path} or {obj2_path} at index {idx}")
-                return None, None, None, None, None, None, None, None
-            return t1, p1, m1, r1, t2, p2, m2, r2
+        return t1, p1, m1, r1, t2, p2, m2, r2
 
     def get_object_sample(self, obj_path, indices):
-        
-
         #(hash_chunk_size, token_size)
-        hash_t, hash_p, hash_m, hash_aug = self.load_hash_consecutive(obj_path, indices)
+        hash_t, hash_p, hash_m = self.load_hash_consecutive(obj_path, indices)
         
         #(window_size - hash_chunk_size, token_size)
-        mlp, mlp_aug = self.load_mlp_weights(obj_path)        
-        mlp_t, mlp_p, mlp_m = mlp
+        mlp_t, mlp_p, mlp_m = self.load_mlp_weights(obj_path)        
         mlp_p[:,0] = torch.arange(self.hash_table_indices_end[-1].item()+1, self.hash_table_indices_end[-1].item()+1 + len(mlp_p[:,2]))  # Set position indices for MLP tokens
 
-        return torch.vstack([hash_t, mlp_t]), torch.vstack([hash_p, mlp_p]), torch.vstack([hash_m, mlp_m]), torch.vstack([hash_aug, mlp_aug])
+        return torch.vstack([hash_t, mlp_t]), torch.vstack([hash_p, mlp_p]), torch.vstack([hash_m, mlp_m])
     
 
     def load_hash_consecutive(self, path, global_indices):
@@ -137,7 +106,7 @@ class IngpData(Dataset):
         masks = masks.reshape(-1, self.token_size)  # Reshape to match tokens
 
 
-        return tokens, pos, masks, self.augment_layer(tokens)
+        return tokens, pos, masks
 
     def load_hash_every_layer(self, path, indices):
         """
@@ -157,14 +126,12 @@ class IngpData(Dataset):
         return_data = torch.stack(return_data) #(16,512,8,2)
         #turn it to (512,8,16,2) and then flatten to (512,256)
         token = return_data.permute(1,2,0,3).reshape(-1, self.token_size)
-        augmented = None
-        if self.augment:
-            augmented = self.augment_layer(token)
+
         mask = torch.ones_like(token)
         #(1,256)
         pos = torch.randint(0,512,size = (token.shape[0],2))
 
-        return token, pos, mask, augmented
+        return token, pos, mask
     
     def load_hash_info(self):
         hash_table_indices = []
@@ -174,22 +141,20 @@ class IngpData(Dataset):
         hash_table_indices = torch.ceil(torch.tensor(hash_table_indices) / (self.token_size // 2))
         self.hash_table_indices_end = torch.cumsum(hash_table_indices, dim=0).to(dtype=torch.int)
         self.hash_table_indices_start = torch.cat([torch.tensor([0]), self.hash_table_indices_end[:-1]])
-    def load_object_paths(self):
-        
+    
+    def load_object_paths(self): 
         self.objects = glob.glob(self.data_path + "/*")
         self.all_objects_2d = []
         self.all_objects = []
         for o in self.objects:
-            objs_path = glob.glob(o + "/*")
-            this_object = []
-            for in_obj in objs_path:
-
-                with open(in_obj + "/transforms.json", "r") as file:
-                    transform = json.load(file)
-                    del transform["frames"]
-                data = (in_obj + "/checkpoints/final.h5",transform)
-                this_object.append(data)
-                self.all_objects.append(data)
+            h5_paths = glob.glob(o + "/**/*.h5",  recursive=True)
+            if len(h5_paths) <= 1:
+                continue
+            transforms =  [[float(m) for m in k.split("/")[-3].split("_")[1:]] for k in h5_paths]
+            transforms = torch.deg2rad(torch.tensor(transforms, dtype=torch.float32))  # Convert degrees to radians
+            this_object = list(zip(*[h5_paths, transforms]))
+            
+            self.all_objects.extend(this_object)
             self.all_objects_2d.append(this_object)
         self.load_hash_info()
     
@@ -202,7 +167,7 @@ class IngpData(Dataset):
             list: A list of tokenized MLP layers, each represented as a tensor.
         """
         geometry_layers, view_layers = [], []
-        augmented_geometry_layers, augmented_view_layers = [], []
+
         
         with h5py.File(path, 'r') as f:
             for i in range(3):
@@ -210,12 +175,6 @@ class IngpData(Dataset):
                 chunk1 = torch.from_numpy(dset1[:])
                 chunk2 = torch.from_numpy(dset2[:])
 
-                if self.augment:
-                    augment1 = self.augment_layer(chunk1)
-                    augment2 = self.augment_layer(chunk2)
-
-                    augmented_geometry_layers.append(self.tokenize_mlp_layer(augment1, layer_ix= i + 16))
-                    augmented_view_layers.append(self.tokenize_mlp_layer(augment2, layer_ix= i + 16 + 3))
                 # Tokenize each layer
                 geometry_layers.append(self.tokenize_mlp_layer(chunk1, layer_ix= i + 16))
                 view_layers.append(self.tokenize_mlp_layer(chunk2, layer_ix= i + 16 + 3))
@@ -224,10 +183,8 @@ class IngpData(Dataset):
         layers = geometry_layers + view_layers
         layers = [torch.vstack(k) for k in zip(*layers)]
 
-        if self.augment:
-            augmented_layers = augmented_geometry_layers + augmented_view_layers
-            augmented_layers = [torch.vstack(k) for k in zip(*augmented_layers)]
-        return layers, augmented_layers[0]
+       
+        return layers
         
     def tokenize_mlp_layer(self, w, layer_ix = None):
         pad = self.max_layer_width - w.shape[1]
@@ -255,9 +212,5 @@ class IngpData(Dataset):
         pos[:,2] = torch.arange(w.shape[0])
         return w,pos,mask
 
-    def augment_layer(self, w):
-        """Apply data augmentation to a single MLP layer."""
-        # Example augmentation: add noise
-        noise = 0.01 * torch.randn_like(w)
-        return w + noise
+
 

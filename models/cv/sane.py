@@ -6,7 +6,7 @@ import torch.nn as nn
 
 from deeppy.utils import print_args
 
-from deeppy import Network, SanePositionalEmbedding,LinearBeforePosition, SqueezeLastDimention, NTXentLoss, NT_Xent, Optimizer
+from deeppy import Network, SanePositionalEmbedding,LinearBeforePosition, SqueezeLastDimention, QuaternionLoss, NT_Xent, Optimizer
 from deeppy.models import BaseModel
 
 class Sane(BaseModel):
@@ -26,7 +26,7 @@ class Sane(BaseModel):
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp
-		self.class_crit = nn.MSELoss()
+		self.rot_crit = QuaternionLoss(loss_type='relative')
 		self.recon_crit = nn.MSELoss()
 		self.ntx_crit = NT_Xent(temp = ntx_temp)
 		self.gamma = torch.tensor(gamma).to(device)
@@ -45,6 +45,7 @@ class Sane(BaseModel):
 		self.bias = bias
 		self.projection_dim = projection_dim
 		
+
 		#Autoencoder
 		self.latent_dim = latent_dim
 		self.optimizer_params = optimizer_params
@@ -57,17 +58,19 @@ class Sane(BaseModel):
 		
 		self.optimizer = self.configure_optimizer()
 		self.params = [self.autoencoder_params, self.project_params, self.classify_params]
-		self.objects = [self.recon_crit, self.ntx_crit, self.class_crit]
+		self.objects = [self.recon_crit, self.ntx_crit, self.rot_crit]
 		self.optimizers = [self.optimizer]
 
 	
 	def init_objects(self):
-		self.recon_crit, self.ntx_crit, self.class_crit = self.objects	
+		self.recon_crit, self.ntx_crit, self.rot_crit = self.objects
 
 	def forward(self, X):
 		X,p = X
 		z = self.autoencoder.encode((X,p))
-		zp = self.project(z)
+
+		z[:,0,4:] = 0
+		zp = self.project(z[:,1:])
 		y = self.autoencoder.decode((z,p))
 		return z, y, zp
 
@@ -82,24 +85,28 @@ class Sane(BaseModel):
 
 	def get_loss(self,X):
 		x_1, p_1,m_1,r_1, x_2, p_2,m_2,r_2 = X
+		r_1, r_2 = self.rot_crit.euler_to_quaternion(r_1), self.rot_crit.euler_to_quaternion(r_2)
 
 		z_1, y_1, zp_1 = self((x_1, p_1))
 		z_2, y_2, zp_2 = self((x_2, p_2))
-		# cat y_i, y_j and x_i, x_j, and m_i, m_j
+		
+		#Compute reconstruction loss
 		x = torch.cat([x_1, x_2], dim=0)
 		y = torch.cat([y_1, y_2], dim=0)
 		m = torch.cat([m_1, m_2], dim=0)
-		# compute loss
-
-		#z_rot1 = self.classify(z_1[:,0]) #[B_size x 3]
-		#z_rot2 = self.classify(z_2[:,0]) #[B_size x 3]
-
-		#class_loss = self.class_crit(z_rot1,r_1) #+ self.class_crit(z_rot2,r_2)
 		recon_loss = self.recon_crit(y*m,x)
+		
+		#Compute rotation loss
+		z_rot1 = z_1[:,0,:4] #[B_size x 4]
+		z_rot2 = z_2[:,0,:4] #[B_size x 4]
+		rot_loss = self.rot_crit(z_rot1, z_rot2, r_1, r_2)
+
+		#Compute NTX loss
 		ntx_loss = self.ntx_crit(zp_1, zp_2)
 
-		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss)# + (self.gamma[1] * class_loss)
-		return loss, (loss.item(), recon_loss.item(), ntx_loss.item())#, class_loss.item())
+		#Compute final loss
+		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * rot_loss)
+		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), rot_loss.item())
 
 	def back_propagate(self,loss):
 		self.optimizer.step(loss)
@@ -173,7 +180,7 @@ class Sane(BaseModel):
 			"blocks":[SqueezeLastDimention],
 		}
 		arch_params2 = {
-			"layers":[self.latent_dim * self.context_size, self.projection_dim, self.projection_dim],
+			"layers":[self.latent_dim * (self.context_size - 1), self.projection_dim, self.projection_dim],
 			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
 			"block_args":[{"bias" : self.bias}, {"normalized_shape":self.projection_dim}],
 			"out_act": nn.ReLU,
@@ -219,3 +226,11 @@ class Sane(BaseModel):
 
 		del self.optimizer_params["optimizer_args"]["weight_decay"]
 		return Optimizer(optim_groups, **self.optimizer_params)
+
+	# =====================================================================
+	#HELPER FUNCTIONS
+
+	def quaternion_conjugate(q):
+		w, x, y, z = q.unbind(-1)
+		return torch.stack([w, -x, -y, -z], dim=-1)
+

@@ -119,6 +119,9 @@ class Network(nn.Module):
 	def last_lr(self):
 		return self.optimizer.scheduler.scheduler.get_last_lr()[0]
 
+	def print_param_count(self):
+		print(f"Total parameters : {sum(p.numel() for p in self.model.parameters()) / 1e6} Million")
+
 
 
 

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class NT_Xent(nn.Module):
     def __init__(self, temp):
@@ -93,3 +94,87 @@ class NTXentLoss(nn.Module):
 
         loss = -torch.log(pos_sim / denom)
         return loss.mean()
+
+
+
+
+
+class QuaternionLoss(nn.Module):
+    def __init__(self, loss_type='mse'):
+        super(QuaternionLoss, self).__init__()
+        assert loss_type in ['mse', 'relative'], "loss_type must be 'mse' or 'relative'"
+        self.loss_type = loss_type
+        if self.loss_type == 'mse':
+            self.loss_fn = self.quaternion_mse_loss
+        else:
+            self.loss_fn = self.quaternion_relative_loss
+
+    def forward(self, q1_pred, q2_pred, q1_true, q2_true):
+        return self.loss_fn(q1_pred, q2_pred, q1_true, q2_true)
+
+    def euler_to_quaternion(self, euler: torch.Tensor, order: str = 'xyz') -> torch.Tensor:
+        roll, pitch, yaw = euler[..., 0], euler[..., 1], euler[..., 2]
+
+        cr = torch.cos(roll * 0.5)
+        sr = torch.sin(roll * 0.5)
+        cp = torch.cos(pitch * 0.5)
+        sp = torch.sin(pitch * 0.5)
+        cy = torch.cos(yaw * 0.5)
+        sy = torch.sin(yaw * 0.5)
+
+        w = cr * cp * cy + sr * sp * sy
+        x = sr * cp * cy - cr * sp * sy
+        y = cr * sp * cy + sr * cp * sy
+        z = cr * cp * sy - sr * sp * cy
+
+        return torch.stack((w, x, y, z), dim=-1)
+
+    def normalize_quaternion(self, q: torch.Tensor, eps=1e-8) -> torch.Tensor:
+        return q / (q.norm(p=2, dim=-1, keepdim=True).clamp(min=eps))
+
+    def quaternion_conjugate(self, q: torch.Tensor) -> torch.Tensor:
+        w = q[..., 0:1]
+        xyz = -q[..., 1:]
+        return torch.cat([w, xyz], dim=-1)
+
+    def quaternion_multiply(self, q: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
+        w1, x1, y1, z1 = q.unbind(-1)
+        w2, x2, y2, z2 = r.unbind(-1)
+
+        w = w1*w2 - x1*x2 - y1*y2 - z1*z2
+        x = w1*x2 + x1*w2 + y1*z2 - z1*y2
+        y = w1*y2 - x1*z2 + y1*w2 + z1*x2
+        z = w1*z2 + x1*y2 - y1*x2 + z1*w2
+
+        return torch.stack((w, x, y, z), dim=-1)
+
+    def quaternion_relative_loss(self, q1_pred, q2_pred, q1_true, q2_true):
+        q1_pred = self.normalize_quaternion(q1_pred)
+        q2_pred = self.normalize_quaternion(q2_pred)
+        q1_true = self.normalize_quaternion(q1_true)
+        q2_true = self.normalize_quaternion(q2_true)
+
+        q1_pred_inv = self.quaternion_conjugate(q1_pred)
+        q1_true_inv = self.quaternion_conjugate(q1_true)
+
+        rel_pred = self.quaternion_multiply(q2_pred, q1_pred_inv)
+        rel_true = self.quaternion_multiply(q2_true, q1_true_inv)
+
+        dot = torch.abs(torch.sum(rel_pred * rel_true, dim=-1))
+        loss = 1.0 - dot
+        return loss.mean()
+
+    def quaternion_mse_loss(self, q1_pred, q2_pred, q1_true, q2_true):
+        q1_pred = self.normalize_quaternion(q1_pred)
+        q2_pred = self.normalize_quaternion(q2_pred)
+        q1_true = self.normalize_quaternion(q1_true)
+        q2_true = self.normalize_quaternion(q2_true)
+
+        dot1 = torch.sum(q1_pred * q1_true, dim=-1)
+        dot1 = torch.clamp(dot1, -1.0, 1.0)
+
+        dot2 = torch.sum(q2_pred * q2_true, dim=-1)
+        dot2 = torch.clamp(dot2, -1.0, 1.0)
+
+        dots = torch.cat([dot1, dot2], dim=0)
+        return F.mse_loss(dots, torch.ones_like(dots))
