@@ -4,9 +4,12 @@ import itertools
 import torch
 import torch.nn as nn
 
+
 from deeppy.utils import print_args
 
-from deeppy import Network, SanePositionalEmbedding,LinearBeforePosition, SqueezeLastDimention, QuaternionLoss, NT_Xent, Optimizer
+from deeppy import Network, SqueezeLastDimention, QuaternionLoss, NT_Xent, Optimizer
+from deeppy import LinearTokenizerBeforePosition
+from deeppy import SaneXYZPositionalEmbedding, SanePositionalEmbedding
 from deeppy.models import BaseModel
 
 class Sane(BaseModel):
@@ -36,7 +39,7 @@ class Sane(BaseModel):
 		self.input_dim = input_dim
 		self.max_positions = max_positions
 		self.embed_dim = embed_dim
-		#Transformer
+		#Transformerd
 		self.context_size = context_size
 		self.num_heads = num_heads
 		self.num_layers = num_layers
@@ -69,7 +72,7 @@ class Sane(BaseModel):
 		X,p = X
 		z = self.autoencoder.encode((X,p))
 
-		z[:,0,4:] = 0
+		#z[:,0,4:] = 0
 		zp = self.project(z[:,1:])
 		y = self.autoencoder.decode((z,p))
 		return z, y, zp
@@ -97,8 +100,8 @@ class Sane(BaseModel):
 		recon_loss = self.recon_crit(y*m,x)
 		
 		#Compute rotation loss
-		z_rot1 = self.classify(z_1[:,0,:4]) #[B_size x 4]
-		z_rot2 = self.classify(z_2[:,0,:4]) #[B_size x 4]
+		z_rot1 = self.classify(z_1[:,0,:]) #[B_size x 4]
+		z_rot2 = self.classify(z_2[:,0,:]) #[B_size x 4]
 		rot_loss = self.rot_crit(z_rot1, z_rot2, r_1, r_2)
 
 		#Compute NTX loss
@@ -106,9 +109,11 @@ class Sane(BaseModel):
 
 		#Compute final loss
 		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * rot_loss)
+
 		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), rot_loss.item())
 
 	def back_propagate(self,loss):
+
 		self.optimizer.step(loss)
 
 	# =====================================================================
@@ -118,7 +123,7 @@ class Sane(BaseModel):
 		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		
 		encoder_params = {
-			"blocks":[LinearBeforePosition,SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
+			"blocks":[LinearTokenizerBeforePosition,SaneXYZPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
 			"block_args":[
 				{
 					"in_features": self.input_dim,
@@ -143,7 +148,7 @@ class Sane(BaseModel):
 		}
 
 		decoder_params = {
-			"blocks":[LinearBeforePosition, SanePositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
+			"blocks":[LinearTokenizerBeforePosition, SaneXYZPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
 			"block_args":[
 				{
 					"in_features": self.latent_dim,
@@ -182,7 +187,7 @@ class Sane(BaseModel):
 		arch_params2 = {
 			"layers":[self.latent_dim * (self.context_size - 1), self.projection_dim, self.projection_dim],
 			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
-			"block_args":[{"bias" : self.bias}, {"normalized_shape":self.projection_dim}],
+			"block_args":[{"bias" : self.bias}],
 			"out_act": nn.ReLU,
 			"weight_init":"uniform",
 		}
@@ -198,10 +203,16 @@ class Sane(BaseModel):
 			"blocks":[nn.Linear],
 			"block_args":[
 				{
-					"in_features": 4,
+					"in_features": self.latent_dim,
 					"out_features" : 4,
 				},
 			],
+			"out_act": nn.Identity,
+			"weight_init":"uniform",
+		}
+		arch_params = {
+			"layers":[self.latent_dim, self.projection_dim, 4],
+			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
 			"out_act": nn.Identity,
 			"weight_init":"uniform",
 		}
@@ -230,7 +241,25 @@ class Sane(BaseModel):
 	# =====================================================================
 	#HELPER FUNCTIONS
 
-	def quaternion_conjugate(q):
-		w, x, y, z = q.unbind(-1)
-		return torch.stack([w, -x, -y, -z], dim=-1)
 
+	def load(self, file_name):
+		#Load the model from the class.
+		#First initialize a new object, and then load the checkpoint
+		if isinstance(file_name, dict):
+			checkpoint = file_name
+		else:
+			checkpoint = torch.load(file_name + "/checkpoint.pt", weights_only = False)
+		
+		dicts = checkpoint["nets"]
+		objs = checkpoint["objs"]
+		optimizer_dicts = checkpoint["optimizer"]
+		
+
+		for net,net_dicts in zip(self.nets, dicts):
+			net.load_states(net_dicts)
+		if optimizer_dicts is not None:
+			[optimizer.load_states(dic) for optimizer, dic in zip(self.optimizers, optimizer_dicts)]
+		
+		self.objects = objs
+		self.init_objects()
+		return self

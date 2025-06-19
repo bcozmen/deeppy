@@ -6,17 +6,14 @@ from torch.utils.data import Dataset, DataLoader, random_split, Subset
 
 class Base(ABC):
     print_args = classmethod(print_args)
-    def __init__(self, batch_size = 64, num_workers = 0 ,pin_memory=True, shuffle = True):
+    def __init__(self, batch_size = 64, dataloader_args = {}):
         self.device = torch.device("cpu")
 
-
+        self.dataloader_args = dataloader_args
         self.batch_size = batch_size
 
 
-            
-        self.num_workers = num_workers
-        self.pin_memory = pin_memory
-        self.shuffle = shuffle
+
 
         self.train_loader = []
         self.test_loader = []
@@ -62,10 +59,11 @@ class Base(ABC):
         pass
 
 
+
 class DatasetLoader(Base):
     def __init__(self, data, splits = [0.8, 0.1, 0.1], file_name = None,
-                batch_size = 64, num_workers = 0, pin_memory=True, shuffle = True):
-        super().__init__(batch_size = batch_size,  num_workers=num_workers, pin_memory=pin_memory, shuffle=shuffle)
+                batch_size = 64, dataloader_args = {}):
+        super().__init__(batch_size = batch_size,  dataloader_args = dataloader_args)
         self.data = data
         if file_name is not None:
             self.load(data, file_name)
@@ -86,11 +84,11 @@ class DatasetLoader(Base):
 
         self.train_dataset, self.test_dataset,self.valid_dataset = random_split(data, lengths.tolist())
 
-        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=min(self.num_workers,self.batch_size))
+        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, **self.dataloader_args)
         if len(self.test_dataset) > 0:
-            self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=min(self.num_workers,self.batch_size))
+            self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_args)
         if len(self.valid_dataset) > 0:
-            self.valid_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=min(self.num_workers,self.batch_size))
+            self.valid_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size, **self.dataloader_args)
 
     def save(self,file_name):
         split_indices = {
@@ -106,9 +104,11 @@ class DatasetLoader(Base):
         self.valid_dataset = Subset(data, split_indices["valid"])
         self.test_dataset = Subset(data, split_indices["test"])
 
-        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=min(self.num_workers,self.batch_size))
-        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=min(self.num_workers,self.batch_size))
-        self.valid_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size, shuffle=self.shuffle, pin_memory=self.pin_memory, num_workers=min(self.num_workers,self.batch_size))
+        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, **self.dataloader_args)
+        if len(self.test_dataset) > 0:
+            self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_args)
+        if len(self.valid_dataset) > 0:
+            self.valid_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size, **self.dataloader_args)
 
 
 

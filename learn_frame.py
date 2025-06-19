@@ -75,7 +75,7 @@ class Metric():
             labels += ["Learning Rate"]
         self.plot_data(data,labels,log=log,show_result=show_result,save=save)
 
-    def plot(self, log = True, show_result = False, save = None, window_size = 12, show_lrs = False):
+    def plot(self, log = True, show_result = False, save = None, window_size = 12, show_lrs = False, text = ""):
         """
         Plot the training and test data.
         Parameters
@@ -139,6 +139,7 @@ class Metric():
             ax.grid(True) 
         
         plt.xlabel('Steps')
+        plt.title(text)
         if save is not None:
             plt.savefig(save)
         plt.pause(0.001)  # pause a bit so that plots are updated
@@ -323,6 +324,7 @@ class LearnFrame():
         with open(file_name + "/data.pkl", 'rb') as f:
             data = pickle.load(f)
             self.metric = data['metric']
+        self.optim_epoch = max(self.metric.train_data_ix) + 1
 
 
     def get_anim(self, name = None, interval = 100):
@@ -352,7 +354,7 @@ class LearnFrame():
         anim.save(name + ".mp4", writer=writervideo) 
         plt.close()
 
-    def plot(self, show_result = True, log = False,save = None, show_lrs = False, window_size = 12):
-        self.metric.plot(show_result=show_result, log=log,save=save,show_lrs=show_lrs, window_size=window_size)
+    def plot(self, show_result = True, log = False,save = None, show_lrs = False, window_size = 12, text=""):
+        self.metric.plot(show_result=show_result, log=log,save=save,show_lrs=show_lrs, window_size=window_size, text = text)
 
 

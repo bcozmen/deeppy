@@ -9,6 +9,10 @@ __pycache__
 *memory.pkl
 tutorials/checkpoints/
 tutorials/datasets/
+nohup.out
+*png
+*.pkl
+modules/gridencoder/
 
 #Datasets
 datasets/

@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-
 from abc import ABC, abstractmethod,ABCMeta
 
 from deeppy.utils import print_args
@@ -192,10 +191,16 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 
 	def save(self,file_name = None, return_dict=False):
 		#Save the model given a file name
+		optimizer_dicts = self.optimizers
+		try:
+			optimizer_dicts = [optimizer.save_states() for optimizer in self.optimizers]
+		except:
+			optimizer_dicts = None
 		save_dict = {
 			"params" : self.params,
 			"nets" : [net.save_states() for net in self.nets],
-			"objs" : self.objects
+			"objs" : self.objects,
+			"optimizer" : optimizer_dicts
 		}
 		if return_dict:
 			return save_dict
@@ -211,11 +216,17 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		params = checkpoint["params"]
 		dicts = checkpoint["nets"]
 		objs = checkpoint["objs"]
+		optimizer_dicts = checkpoint["optimizer"]
+
+		print(params)
 
 		instance = clss(*params)
 
 		for net,net_dicts in zip(instance.nets, dicts):
 			net.load_states(net_dicts)
+
+		if optimizer_dicts is not None:
+			[optimizer.load_states(dict) for optimizer, dict in zip(clss.optimizers, optimizer_dicts)]
 		
 		instance.objects = objs
 		instance.init_objects()

@@ -97,8 +97,7 @@ class Optimizer():
 			"clipper" : self.clipper,
 			"clipper_params" : self.clipper_params,
 			"scheduler" : sch,
-			"scaler" : self.scaler,
-		}
+			"scaler" : self.scaler}
 
 	def load_states(self, dic):
 		self.clipper_params = dic["clipper_params"]
@@ -161,6 +160,8 @@ class LayerGenerator():
 				#If its a batch norm layer:
 				if block.__name__ in nn.modules.batchnorm.__all__:
 					bargs["num_features"] = out
+				elif block.__name__ == "LayerNorm":
+					bargs["normalized_shape"] = out
 				net.append(block(**bargs))
 
 		#If just one layer is given (like nn.Linear), initialize the out activation function too
