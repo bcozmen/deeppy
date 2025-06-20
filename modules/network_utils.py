@@ -190,7 +190,7 @@ class LayerGenerator():
 			act_name = "leaky_relu"
 			n_slope = act.negative_slope
 		elif act_name == "softmax":
-			act_name = "relu"
+			act_name = "linear"
 
 
 		if self.weight_init == "uniform":
@@ -200,9 +200,8 @@ class LayerGenerator():
 			inits = [nn.init.xavier_normal_, nn.init.kaiming_normal_]
 			mode = "fan_out"
 
-		if act_name =="identity" or "softmax":
-			pass
-		elif act_name == "sigmoid" or act_name == "tanh":
+
+		if act_name == "sigmoid" or act_name == "tanh":
 			inits[0](layer.weight, gain = nn.init.calculate_gain(act_name))
 		else:
 			inits[1](layer.weight, mode = mode, nonlinearity = act_name, a = n_slope)

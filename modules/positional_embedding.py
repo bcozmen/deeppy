@@ -46,7 +46,7 @@ class OrderedPositionalEmbedding(nn.Module):
         return x + self.embed(pos)
 
 
-class SaneChunkwisePositionalEmbedding(nn.Module):
+class ChunkwisePositionalEmbedding(nn.Module):
     def __init__(self, max_positions = 5, embed_dim = 128, chunk_size = 2):
         super().__init__()
         self.max_positions = max_positions
@@ -54,7 +54,7 @@ class SaneChunkwisePositionalEmbedding(nn.Module):
         self.chunk_size = chunk_size
         
         self.positional_embedding = nn.Embedding(max_positions, embed_dim)
-    def forward(self, x,p):
+    def forward(self, p):
         D = p.shape[-1]
         orig_shape = tuple(p.shape[:-1])
 
@@ -63,27 +63,36 @@ class SaneChunkwisePositionalEmbedding(nn.Module):
         pe = self.positional_embedding(p)
         pe = pe.reshape(orig_shape + (self.embed_dim * n_chunks,))
 
-        return x + pe
+        return pe
 
 class SaneXYZPositionalEmbedding(nn.Module):
-    def __init__(self, max_positions = [25], embed_dim = 128):
+    def __init__(self, max_positions = [5000000, 25], embed_dim = 128):
         super().__init__()
         self.max_positions = max_positions
         self.embed_dim = embed_dim
 
-        self.hash_embed = nn.Linear(3, embed_dim)
-        self.mlp_embed = nn.Embedding(max_positions[0], embed_dim)
+        self.hash_linear_embed = nn.Linear(3, embed_dim)
+        self.hash_index_embed = ChunkwisePositionalEmbedding(max_positions=max_positions[0], embed_dim= 8, chunk_size=1)
+        self.mlp_embed = nn.Embedding(max_positions[1], embed_dim)
     
     def forward(self, X):
         x,p = X
-        hash, mlp = p[:,:-self.max_positions[0]], p[:, -self.max_positions[0]:].to(torch.int64)
+
+        hash, mlp = p[:,:-self.max_positions[1]], p[:, -self.max_positions[1]:].long()
+
+        hash_xyz, hash_indices = hash[:,:,:3], hash[:,:,3:].long()
+
+
+        he_linear, mlpe = self.hash_linear_embed(hash_xyz), self.mlp_embed(mlp[...,0])
+        he_index = self.hash_index_embed(hash_indices)
         
-        he, mlpe = self.hash_embed(p), self.mlp_embed(mlp[...,0])
+
+        he = he_linear + he_index
         pe = torch.cat((he,mlpe), dim=1)
 
         return x + pe
 
-class SaneXYZPositionalEmbedding(nn.Module):
+class SaneXYZPositionalEmbedding_Linear(nn.Module):
     def __init__(self, max_positions = [25], embed_dim = 128):
         super().__init__()
         self.max_positions = max_positions

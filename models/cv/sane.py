@@ -58,7 +58,7 @@ class Sane(BaseModel):
 		self.project , self.project_params = self.build_projection_head()
 		self.classify, self.classify_params = self.build_classifier()
 		self.nets = [self.autoencoder, self.project, self.classify]
-		[net.apply(self._init_weights_relu) for net in self.nets]
+		#[net.apply(self._init_weights_relu) for net in self.nets]
 
 		self.optimizer = self.configure_optimizer()
 		self.params = [self.autoencoder_params, self.project_params, self.classify_params]
@@ -123,8 +123,9 @@ class Sane(BaseModel):
 		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		
+		blocks = [LinearTokenizerBeforePosition,SaneXYZPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear]
 		encoder_params = {
-			"blocks":[LinearTokenizerBeforePosition,SaneXYZPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
+			"blocks": blocks,
 			"block_args":[
 				{
 					"in_features": self.input_dim,
@@ -149,7 +150,7 @@ class Sane(BaseModel):
 		}
 
 		decoder_params = {
-			"blocks":[LinearTokenizerBeforePosition, SaneXYZPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear],
+			"blocks": blocks,
 			"block_args":[
 				{
 					"in_features": self.latent_dim,

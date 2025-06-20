@@ -141,7 +141,7 @@ class IngpData(Dataset):
         #self.max_positions[2] = (hash_table_indices_end[-1]  - hash_table_indices_end[-2] ).item() + 1
 
         #EXP1
-        self.max_positions = torch.tensor([54])
+        self.max_positions = torch.tensor([self.grid_encoder.hash_table_indices_end[-1]+1 ,54])
 
     def __len__(self):
         return len(self.all_objects_2d) * 20000
@@ -169,7 +169,7 @@ class IngpData(Dataset):
         
         file_path = file_path.replace("final.pth", "")
         # 3D points = (C,3)
-        B = points.shape[0]
+        C = points.shape[0]
        
         #(C,8,16,1)
         indices = self.grid_encoder(points)
@@ -193,7 +193,7 @@ class IngpData(Dataset):
         hash_tokens = hash_tokens_sorted[original_order.argsort()]  
 
         #(C,256)
-        hash_tokens = hash_tokens.reshape(B,-1)
+        hash_tokens = hash_tokens.reshape(C,-1)
         hash_masks = torch.ones_like(hash_tokens)
         #(C,128)
 
@@ -213,12 +213,13 @@ class IngpData(Dataset):
         
 
         #XYZ -> nn.linear position
-        hash_pos = points
-        mlp_pos = torch.zeros((mlp_tokens.shape[0],3))
-        mlp_pos[:,0] = torch.linspace(-0.1,-1,mlp_pos.shape[0])
+        #(C,3) (C,128)
+        index_tokens = indices_flat.reshape(C,-1)
+        hash_pos = torch.cat([points, index_tokens], dim=1)
+        mlp_pos = torch.zeros((mlp_tokens.shape[0],hash_pos.shape[1]))
+        mlp_pos[:,0] = torch.arange(0,mlp_pos.shape[0]) + 1
         
-        rot_p = torch.zeros((1,3))
-        rot_p[:,0] = mlp_pos.shape[0] 
+        rot_p = torch.zeros((1,hash_pos.shape[1]))
 
         return torch.vstack([hash_tokens, mlp_tokens,rot_t]), torch.vstack([hash_pos, mlp_pos,rot_p]), torch.vstack([hash_masks,mlp_masks,rot_m])
     
