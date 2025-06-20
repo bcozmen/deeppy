@@ -247,13 +247,16 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def print_param_count(self):
 		[net.print_param_count() for net in self.nets]
 
-	def print_model_size(model):
-		param_size = 0
-		for net in self.nets:
-			for param in model.parameters():
-				param_size += param.numel() * param.element_size()
-		size_mb = param_size / (1024 ** 3)
-		return size_mb
+	def print_param_size(self):
+		[net.print_param_size() for net in self.nets]
+
+	def print_param_info(self):
+		for ix,net in enumerate(self.nets):
+			param_count, param_size = net.get_param_info()
+			print(f"Net : {ix}")
+			print(f"    Parameters : {param_count:10d}")
+			print(f"    GB         : {param_size / (1024**3):10.4f} GB")
+			
 
 	
 
