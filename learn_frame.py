@@ -128,7 +128,7 @@ class Metric():
 
             ax.plot(self.test_data_ix,data,'--', c = color, alpha=0.9)
 
-
+        ax.set_title(text)
         ax.legend()
 
         if show_lrs:
@@ -139,7 +139,7 @@ class Metric():
             ax.grid(True) 
         
         plt.xlabel('Steps')
-        plt.title(text)
+        
         if save is not None:
             plt.savefig(save)
         plt.pause(0.001)  # pause a bit so that plots are updated

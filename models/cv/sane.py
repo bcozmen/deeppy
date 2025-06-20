@@ -58,7 +58,8 @@ class Sane(BaseModel):
 		self.project , self.project_params = self.build_projection_head()
 		self.classify, self.classify_params = self.build_classifier()
 		self.nets = [self.autoencoder, self.project, self.classify]
-		
+		[net.apply(self._init_weights_relu) for net in self.nets]
+
 		self.optimizer = self.configure_optimizer()
 		self.params = [self.autoencoder_params, self.project_params, self.classify_params]
 		self.objects = [self.recon_crit, self.ntx_crit, self.rot_crit]
@@ -220,6 +221,7 @@ class Sane(BaseModel):
 			"arch_params": [arch_params],
 			"torch_compile" : self.torch_compile,
 		}
+
 		return Network(**network_params).to(self.device), network_params
 	def configure_optimizer(self):
 		params = itertools.chain(*[k.named_parameters() for k in self.nets])
@@ -237,6 +239,14 @@ class Sane(BaseModel):
 
 		del self.optimizer_params["optimizer_args"]["weight_decay"]
 		return Optimizer(optim_groups, **self.optimizer_params)
+	
+	def _init_weights_relu(self, module):
+		if isinstance(module, nn.Linear):
+			torch.nn.init.kaiming_uniform(module.weight, nonlinearity = "relu")
+			if module.bias is not None:
+				torch.nn.init.zeros_( module.bias)
+		elif isinstance(module, nn.Embedding):
+			torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
 	# =====================================================================
 	#HELPER FUNCTIONS
