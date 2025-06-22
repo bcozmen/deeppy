@@ -143,7 +143,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def get_loss(self,X):
 		pass
 	@abstractmethod
-	def back_propagate(self,loss, scaler):
+	def back_propagate(self,loss):
 		pass
 	@abstractmethod
 	def forward(self,X):
@@ -254,8 +254,8 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		for ix,net in enumerate(self.nets):
 			param_count, param_size = net.get_param_info()
 			print(f"Net : {ix}")
-			print(f"    Parameters : {param_count:10d}")
-			print(f"    GB         : {param_size / (1024**3):10.4f} GB")
+			print(f"    Parameters : {param_count/(1e6):6.4f} M")
+			print(f"    Size       : {param_size / (1024**3):6.4f} GB")
 			
 
 	

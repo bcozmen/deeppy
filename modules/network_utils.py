@@ -32,7 +32,7 @@ class Optimizer():
 	print_args = classmethod(print_args)
 	dependencies = [Scheduler]
 
-	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW, optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
+	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW, accumulation_steps = 1, optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
 		
 		if configure_optimizer is not None:
 			model, optimizer_args = configure_optimizer(model,optimizer_args)
@@ -49,6 +49,9 @@ class Optimizer():
 		self.scaler = GradScaler(enabled=False)
 		self.clipper = clipper
 		self.clipper_params = clipper_params
+		self.accumulation_steps = accumulation_steps
+		self.step_counter = 0
+		self.optimizer.zero_grad(set_to_none=True)
 
 		self.scheduler = None
 		if scheduler_params is not None:
@@ -56,7 +59,7 @@ class Optimizer():
 	
 	def step(self, loss):
 		# Zero gradients
-		self.optimizer.zero_grad(set_to_none=True)
+		loss = loss / self.accumulation_steps
 
 		# Compute gradients
 		if self.scaler.is_enabled():
@@ -65,26 +68,29 @@ class Optimizer():
 			loss.backward()
 
 		# Optional gradient clipping
-		if self.clipper is not None:
+		if (self.step_counter + 1) % self.accumulation_steps == 0:
+			if self.clipper is not None:
+				if self.scaler.is_enabled():
+					self.scaler.unscale_(self.optimizer)  # Required before clipping
+
+				if self.nn_model:
+					self.clipper(self.model.parameters(), **self.clipper_params)
+				else:
+					params = [p for group in self.model for p in group["params"]]
+					self.clipper(params, **self.clipper_params)
+
+			# Optimizer step
 			if self.scaler.is_enabled():
-				self.scaler.unscale_(self.optimizer)  # Required before clipping
-
-			if self.nn_model:
-				self.clipper(self.model.parameters(), **self.clipper_params)
+				self.scaler.step(self.optimizer)
+				self.scaler.update()
 			else:
-				params = [p for group in self.model for p in group["params"]]
-				self.clipper(params, **self.clipper_params)
+				self.optimizer.step()
 
-		# Optimizer step
-		if self.scaler.is_enabled():
-			self.scaler.step(self.optimizer)
-			self.scaler.update()
-		else:
-			self.optimizer.step()
+			# Scheduler step (if auto-stepping)
+			if self.scheduler is not None and getattr(self.scheduler, "auto_step", False):
+				self.scheduler.step()
 
-		# Scheduler step (if auto-stepping)
-		if self.scheduler is not None and getattr(self.scheduler, "auto_step", False):
-			self.scheduler.step()
+		self.step_counter += 1
 
 
 	def save_states(self):

@@ -109,7 +109,7 @@ class Sane(BaseModel):
 		ntx_loss = self.ntx_crit(zp_1, zp_2)
 
 		#Compute final loss
-		loss = (self.gamma[0] * ntx_loss) + ((torch.tensor(1).to(self.device) - torch.sum(self.gamma)) * recon_loss) + (self.gamma[1] * rot_loss)
+		loss = (self.gamma[0] * recon_loss)  + (self.gamma[1] * ntx_loss) + + (self.gamma[2] * rot_loss)
 
 		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), rot_loss.item())
 
@@ -133,7 +133,8 @@ class Sane(BaseModel):
 				},
 				{
 					"max_positions" : self.max_positions,
-					"embed_dim" : self.embed_dim
+					"embed_dim" : self.embed_dim,
+					"input_dim" : self.input_dim
 				},
 				{
 					"p" : self.dropout
@@ -158,7 +159,8 @@ class Sane(BaseModel):
 				},
 				{
 					"max_positions" : self.max_positions,
-					"embed_dim" : self.embed_dim
+					"embed_dim" : self.embed_dim,
+					"input_dim" : self.input_dim
 				},
 				{
 					"p" : self.dropout
@@ -187,7 +189,7 @@ class Sane(BaseModel):
 			"blocks":[SqueezeLastDimention],
 		}
 		arch_params2 = {
-			"layers":[self.latent_dim * (self.context_size - 1), self.projection_dim, self.projection_dim],
+			"layers":[self.latent_dim * (self.context_size - 1), self.projection_dim, self.projection_dim//2],
 			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
 			"block_args":[{"bias" : self.bias}],
 			"out_act": nn.ReLU,

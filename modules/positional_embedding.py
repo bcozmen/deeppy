@@ -66,13 +66,13 @@ class ChunkwisePositionalEmbedding(nn.Module):
         return pe
 
 class SaneXYZPositionalEmbedding(nn.Module):
-    def __init__(self, max_positions = [5000000, 25], embed_dim = 128):
+    def __init__(self, max_positions = [5000000, 25], embed_dim = 128, input_dim = 256):
         super().__init__()
         self.max_positions = max_positions
         self.embed_dim = embed_dim
 
-        self.hash_linear_embed = nn.Linear(3, embed_dim)
-        self.hash_index_embed = ChunkwisePositionalEmbedding(max_positions=max_positions[0], embed_dim= 8, chunk_size=1)
+        self.hash_linear_embed = nn.Linear(3, embed_dim//2)
+        self.hash_index_embed = ChunkwisePositionalEmbedding(max_positions=max_positions[0], embed_dim= embed_dim//input_dim, chunk_size=1)
         self.mlp_embed = nn.Embedding(max_positions[1], embed_dim)
     
     def forward(self, X):
@@ -87,7 +87,7 @@ class SaneXYZPositionalEmbedding(nn.Module):
         he_index = self.hash_index_embed(hash_indices)
         
 
-        he = he_linear + he_index
+        he = torch.cat((he_linear , he_index), dim = -1)
         pe = torch.cat((he,mlpe), dim=1)
 
         return x + pe

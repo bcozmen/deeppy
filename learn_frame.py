@@ -75,7 +75,8 @@ class Metric():
             labels += ["Learning Rate"]
         self.plot_data(data,labels,log=log,show_result=show_result,save=save)
 
-    def plot(self, log = True, show_result = False, save = None, window_size = 12, show_lrs = False, text = ""):
+    def plot(self, log = True, show_result = False, save = None, 
+             window_size = 100, test_steps = 25, show_lrs = False, text = ""):
         """
         Plot the training and test data.
         Parameters
@@ -89,9 +90,13 @@ class Metric():
         window_size : int, optional
             The size of the window for smoothing the data. If None, no smoothing is applied.
         """
+        if window_size is None or test_steps is None:
+            test_window_size = None
+        else:
+            test_window_size = window_size // test_steps 
         num_rows = 1 + int(show_lrs)
-        fig,axes = plt.subplots(num_rows, figsize = (12,10*num_rows))
-        
+        fig, axes = plt.subplots(num_rows, figsize=(12, 10 * num_rows))
+
         if num_rows == 1:
             axes = [axes]
         
@@ -123,6 +128,10 @@ class Metric():
         for data,label,color in zip(test_data, self.train_labels,self.colors):
             #if window_size is not None:
             #    data = self.gaussian_smooth(data, window_size=window_size)
+            if test_window_size is not None and test_window_size > 0:
+                data = self.uniform_smooth(data, window_size=test_window_size)
+                self.test_data_ix = self.test_data_ix[test_window_size//2:-(test_window_size//2-1)]
+            
             if log:
                 data = np.log10(data)
 
@@ -354,7 +363,7 @@ class LearnFrame():
         anim.save(name + ".mp4", writer=writervideo) 
         plt.close()
 
-    def plot(self, show_result = True, log = False,save = None, show_lrs = False, window_size = 12, text=""):
-        self.metric.plot(show_result=show_result, log=log,save=save,show_lrs=show_lrs, window_size=window_size, text = text)
+    def plot(self, show_result = True, log = False,save = None, show_lrs = False, window_size = 12, text="", test_steps = None):
+        self.metric.plot(show_result=show_result, log=log,save=save,show_lrs=show_lrs, window_size=window_size, text = text, test_steps = test_steps)
 
 
