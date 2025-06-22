@@ -183,7 +183,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		for opt in self.optimizers:
 			opt.scaler = self.scaler    
 			opt.gradient_accumulation_steps = self.gradient_accumulation_steps
-
+		print(self.optimizers[0].gradient_accumulation_steps)
 	def last_lr(self):
 		#Net the last_lr if a scheduler is used
 		try:

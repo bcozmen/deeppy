@@ -277,15 +277,17 @@ class LearnFrame():
             Loss objects (shape depends on the algorithm)
         """
 
-        X = self.data.train_data()
+        
 
         #For RL models, if start_size is not reached
-        if X is None:
-            return None
+        
         
         step = False
         trains = []
         while not step:
+            X = self.data.train_data()
+            if X is None:
+                return None
             train, step = self.model.optimize(X)
             trains.append(train)
         
@@ -295,7 +297,7 @@ class LearnFrame():
 
         self.metric.train_data.append(train)
         self.metric.train_data_ix.append(self.optim_epoch)
-        if not last_lr:
+        if last_lr:
             self.metric.lrs.append(last_lr[0])
         
         return train
@@ -315,7 +317,7 @@ class LearnFrame():
                 loss = self.model.test(X)
                 losses.append(loss)
         
-        loss = tuple(np.mean(losses),axis=0)
+        loss = tuple(np.mean(losses,axis=0))
                 
         if isinstance(self.data, EnvData):
             self.metric.duration_data.append(loss[0])

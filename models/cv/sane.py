@@ -113,8 +113,7 @@ class Sane(BaseModel):
 		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), rot_loss.item())
 
 	def back_propagate(self,loss):
-
-		self.optimizer.step(loss)
+		return self.optimizer.step(loss)
 
 	# =====================================================================
 	

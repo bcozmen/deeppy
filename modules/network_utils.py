@@ -32,7 +32,7 @@ class Optimizer():
 	print_args = classmethod(print_args)
 	dependencies = [Scheduler]
 
-	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW, gradient_accumulation_steps = 1, optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
+	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW,  optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
 		
 		if configure_optimizer is not None:
 			model, optimizer_args = configure_optimizer(model,optimizer_args)
@@ -46,33 +46,35 @@ class Optimizer():
 			self.model = model
 			self.optimizer = optimizer(self.model.parameters() , **optimizer_args)
 		
-		self.scaler = GradScaler(enabled=False)
+		
 		self.clipper = clipper
 		self.clipper_params = clipper_params
-		self.gradient_accumulation_steps = gradient_accumulation_steps
 		self.step_counter = 0
 		self.optimizer_steps_counter = 0
+		
+		
+
+		#Initialize with neutral values and then later in in base model.set_optimizerrs
 		self.optimizer.zero_grad(set_to_none=True)
+		self.gradient_accumulation_steps = 1
+		self.scaler = GradScaler(enabled=False)
 
 		self.scheduler = None
 		if scheduler_params is not None:
 			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
 	
 	def step(self, loss):
-		# Zero gradients
+		# Calculate loss wrt accumulation
 		loss = loss / self.gradient_accumulation_steps
 
 		# Compute gradients
-		if self.scaler.is_enabled():
-			self.scaler.scale(loss).backward()
-		else:
-			loss.backward()
+		self.scaler.scale(loss).backward()
 
-		# Optional gradient clipping
-		if (self.step_counter + 1) % self.gradient_accumulation_steps_steps == 0:
+		# If gradient accumulation steps is reached, perform optimization step
+		if (self.step_counter + 1) % self.gradient_accumulation_steps == 0:
+			# Gradient clipping
 			if self.clipper is not None:
-				if self.scaler.is_enabled():
-					self.scaler.unscale_(self.optimizer)  # Required before clipping
+				self.scaler.unscale_(self.optimizer)  # Required before clipping
 
 				if self.nn_model:
 					self.clipper(self.model.parameters(), **self.clipper_params)
@@ -81,14 +83,12 @@ class Optimizer():
 					self.clipper(params, **self.clipper_params)
 
 			# Optimizer step
-			if self.scaler.is_enabled():
-				self.scaler.step(self.optimizer)
-				self.scaler.update()
-			else:
-				self.optimizer.step()
+			self.scaler.step(self.optimizer)
+			self.scaler.update()
+			self.optimizer.zero_grad(set_to_none=True)
 
 			# Scheduler step (if auto-stepping)
-			if self.scheduler is not None and getattr(self.scheduler, "auto_step", False):
+			if self.scheduler is not None and self.scheduler.auto_step:
 				self.scheduler.step()
 			
 			self.optimizer_steps_counter += 1
