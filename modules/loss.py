@@ -161,11 +161,11 @@ class QuaternionLoss(nn.Module):
         rel_true = self.quaternion_multiply(q2_true, q1_true_inv)
 
         dot = torch.abs(torch.sum(rel_pred * rel_true, dim=-1))
-        dot = torch.clamp(dot, -1.0, 1.0)
+        dot = torch.clamp(dot, 0.0, 1.0)
 
-        loss = (1.0 - dot) ** 2
+        #loss = (1.0 - dot) ** 2
         
-        #loss = (2 * torch.acos(dot)) ** 2
+        loss = (2 * torch.acos(dot)) ** 2
         return loss.mean()
 
     def quaternion_mse_loss(self, q1_pred, q2_pred, q1_true, q2_true):

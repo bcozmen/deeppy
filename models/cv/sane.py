@@ -21,11 +21,10 @@ class Sane(BaseModel):
 		input_dim= 201, latent_dim = 128, projection_dim = 30,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
 		gamma = [0.05,0.05], ntx_temp = 0.1,
-		device = None, amp = False,torch_compile = False):
+		device = None, amp = False,torch_compile = False, gradient_accumulation_steps = 1):
 
-		super().__init__(device= device, amp=amp)
+		super().__init__(device= device, amp=amp, torch_compile=torch_compile, gradient_accumulation_steps=gradient_accumulation_steps)
 
-		self.torch_compile = torch_compile
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp

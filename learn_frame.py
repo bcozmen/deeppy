@@ -283,14 +283,21 @@ class LearnFrame():
         if X is None:
             return None
         
-        train = self.model.optimize(X)
+        step = False
+        trains = []
+        while not step:
+            train, step = self.model.optimize(X)
+            trains.append(train)
+        
+        train = tuple(np.mean(trains,axis=0))
+        self.optim_epoch = step
+        last_lr = self.model.last_lr()
+
         self.metric.train_data.append(train)
         self.metric.train_data_ix.append(self.optim_epoch)
-        self.optim_epoch += 1
-        try:
-            self.metric.lrs.append(self.model.last_lr()[0])
-        except:
-            pass
+        if not last_lr:
+            self.metric.lrs.append(last_lr[0])
+        
         return train
         
 
@@ -300,6 +307,7 @@ class LearnFrame():
             if isinstance(self.data, EnvData):
                 loss = self.data.emulate(self.model)
                 losses.append(loss)
+                break
                 
             else:
                 
@@ -307,7 +315,7 @@ class LearnFrame():
                 loss = self.model.test(X)
                 losses.append(loss)
         
-        loss = tuple(np.mean(list(zip(*losses)),axis=1))
+        loss = tuple(np.mean(losses),axis=0)
                 
         if isinstance(self.data, EnvData):
             self.metric.duration_data.append(loss[0])

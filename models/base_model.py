@@ -98,7 +98,8 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def after_init(self):
 		self.train()
 		self.set_optimizers()
-	def __init__(self, device = None, criterion = nn.MSELoss(), amp = False, gradient_accumulation = 1):
+	def __init__(self, device = None, criterion = nn.MSELoss(), 
+			  	amp = False, torch_compile = False, gradient_accumulation_steps = 1):
 		"""
 		Initializes Base model
 		"""
@@ -109,10 +110,11 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.params = []
 		self.objects = []
 		self.amp = amp
+		self.torch_compile = torch_compile
 		self.scaler = GradScaler(enabled=self.amp)
 		self.optimizers = None
 
-		self.gradient_accumulation = gradient_accumulation
+		self.gradient_accumulation_steps = gradient_accumulation_steps
 		self.epoch = 0
 	def __call__(self, X):
 		return self.forward(X)
@@ -128,10 +130,10 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
 			loss, return_loss = self.get_loss(X)
 		
-		self.back_propagate(loss)
+		step = self.back_propagate(loss)
 
 
-		return return_loss
+		return return_loss, step
 	@torch.no_grad()
 	def test(self,X):
 		self.eval()
@@ -180,10 +182,14 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 			self.optimizers = [net.optimizer for net in self.nets]
 		for opt in self.optimizers:
 			opt.scaler = self.scaler    
+			opt.gradient_accumulation_steps = self.gradient_accumulation_steps
 
 	def last_lr(self):
 		#Net the last_lr if a scheduler is used
-		return [optimizer.scheduler.scheduler.get_last_lr()[0] for optimizer in self.optimizers]
+		try:
+			return [optimizer.scheduler.scheduler.get_last_lr()[0] for optimizer in self.optimizers]
+		except:
+			return False
 	def scheduler_step(self):
 		#Take a scheduler step
 		for net in self.nets:

@@ -32,7 +32,7 @@ class Optimizer():
 	print_args = classmethod(print_args)
 	dependencies = [Scheduler]
 
-	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW, accumulation_steps = 1, optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
+	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW, gradient_accumulation_steps = 1, optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
 		
 		if configure_optimizer is not None:
 			model, optimizer_args = configure_optimizer(model,optimizer_args)
@@ -49,8 +49,9 @@ class Optimizer():
 		self.scaler = GradScaler(enabled=False)
 		self.clipper = clipper
 		self.clipper_params = clipper_params
-		self.accumulation_steps = accumulation_steps
+		self.gradient_accumulation_steps = gradient_accumulation_steps
 		self.step_counter = 0
+		self.optimizer_steps_counter = 0
 		self.optimizer.zero_grad(set_to_none=True)
 
 		self.scheduler = None
@@ -59,7 +60,7 @@ class Optimizer():
 	
 	def step(self, loss):
 		# Zero gradients
-		loss = loss / self.accumulation_steps
+		loss = loss / self.gradient_accumulation_steps
 
 		# Compute gradients
 		if self.scaler.is_enabled():
@@ -68,7 +69,7 @@ class Optimizer():
 			loss.backward()
 
 		# Optional gradient clipping
-		if (self.step_counter + 1) % self.accumulation_steps == 0:
+		if (self.step_counter + 1) % self.gradient_accumulation_steps_steps == 0:
 			if self.clipper is not None:
 				if self.scaler.is_enabled():
 					self.scaler.unscale_(self.optimizer)  # Required before clipping
@@ -89,9 +90,13 @@ class Optimizer():
 			# Scheduler step (if auto-stepping)
 			if self.scheduler is not None and getattr(self.scheduler, "auto_step", False):
 				self.scheduler.step()
-
-		self.step_counter += 1
-
+			
+			self.optimizer_steps_counter += 1
+			self.step_counter += 1
+			return self.optimizer_steps_counter
+		else:
+			self.step_counter += 1
+			return False
 
 	def save_states(self):
 		if self.scheduler is None:
