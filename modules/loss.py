@@ -122,10 +122,10 @@ class QuaternionLoss(nn.Module):
         cy = torch.cos(yaw * 0.5)
         sy = torch.sin(yaw * 0.5)
 
-        w = cr * cp * cy + sr * sp * sy
-        x = sr * cp * cy - cr * sp * sy
-        y = cr * sp * cy + sr * cp * sy
-        z = cr * cp * sy - sr * sp * cy
+        w = cr * cp * cy - sr * sp * sy
+        x = sr * cp * cy + cr * sp * sy
+        y = cr * sp * cy - sr * cp * sy
+        z = cr * cp * sy + sr * sp * cy
 
         return torch.stack((w, x, y, z), dim=-1)
 
