@@ -36,6 +36,9 @@ class Metric():
         self.train_data,self.test_data = [], []
         self.train_data_ix,self.test_data_ix = [], []
 
+        self.grad_magnitutes = []
+        self.param_magnitutes = []
+
         self.reward, self.duration = 0,0
         self.duration_data, self.reward_data = [],[]
         
@@ -292,11 +295,14 @@ class LearnFrame():
             trains.append(train)
         
         train = tuple(np.mean(trains,axis=0))
+        
         self.optim_epoch = step
         last_lr = self.model.last_lr()
 
         self.metric.train_data.append(train)
         self.metric.train_data_ix.append(self.optim_epoch)
+        self.metric.grad_magnitutes.append(self.model.grad_norm())
+        self.param_magnitutes.append(self.model.param_norm())
         if last_lr:
             self.metric.lrs.append(last_lr[0])
         

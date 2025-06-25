@@ -122,9 +122,6 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def __str__(self):
 		return "\n=======================================\n".join([net.__str__() for net in self.nets])
 
-	def init_objects(self):
-		self.criterion = self.objects[0]
-
 	def optimize(self,X):
 		self.train()
 		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
@@ -150,8 +147,21 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	@abstractmethod
 	def forward(self,X):
 		pass
+
 	#==========================================================================================
-	#BASIC FUNCTIONALITY
+	# States
+
+	def train(self):
+		#Put the pytorch network in training mode
+		[net.train() for net in self.nets]
+		self.training = True
+	def eval(self):
+		#Put the pytorch network in eval mode
+		[net.eval() for net in self.nets]
+		self.training = False
+
+	#==========================================================================================
+	# Torch tensor and device management
 	def ensure_tensor_device(self, X):
 		#Make sure that data is torch tensors and on the correct device
 		if X is None:
@@ -168,14 +178,12 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		else:
 			return self.ensure_tensor_device(X)
 
-	def train(self):
-		#Put the pytorch network in training mode
-		[net.train() for net in self.nets]
-		self.training = True
-	def eval(self):
-		#Put the pytorch network in eval mode
-		[net.eval() for net in self.nets]
-		self.training = False
+	#==========================================================================================
+	# Initializers
+
+	def init_objects(self):
+		self.criterion = self.objects[0]
+
 	def set_optimizers(self):
 		#Set the self.optimizer list
 		if self.optimizers is None:
@@ -184,17 +192,14 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 			opt.scaler = self.scaler    
 			opt.gradient_accumulation_steps = self.gradient_accumulation_steps
 		print(self.optimizers[0].gradient_accumulation_steps)
-	def last_lr(self):
-		#Net the last_lr if a scheduler is used
-		try:
-			return [optimizer.scheduler.scheduler.get_last_lr()[0] for optimizer in self.optimizers]
-		except:
-			return False
+	
 	def scheduler_step(self):
 		#Take a scheduler step
 		for net in self.nets:
 			net.scheduler_step()
 
+	#===========================================================================================
+	# Saving and loading states
 	def save(self,file_name = None, return_dict=False):
 		#Save the model given a file name
 		optimizer_dicts = self.optimizers
@@ -211,6 +216,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		if return_dict:
 			return save_dict
 		torch.save(save_dict, file_name + "/checkpoint.pt")
+	
 	@classmethod
 	def load(clss, file_name):
 		#Load the model from the class.
@@ -237,7 +243,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		instance.objects = objs
 		instance.init_objects()
 		return instance
-
+	
 	def save_states(self):
 		#Helper function to save
 		return self.save(return_dict = True)
@@ -250,6 +256,31 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		for net,net_dicts in zip(self.nets, dicts):
 			net.load_states(net_dicts)
 
+	#===========================================================================================
+	# Metrics
+	def grad_norm(self):
+		total_norm = 0
+		for model in self.nets:
+			for p in model.parameters():
+				if p.grad is not None:
+					total_norm += p.grad.data.norm(2).item() ** 2
+		total_norm = total_norm ** 0.5
+		return total_norm
+	
+	def param_norm(self):
+		total_norm = 0
+		for model in self.nets:
+			for p in model.parameters():
+				if p is not None:
+					total_norm += p.data.norm(2).item() ** 2
+		total_norm = total_norm ** 0.5
+		return total_norm
+	def last_lr(self):
+		#Net the last_lr if a scheduler is used
+		try:
+			return [optimizer.scheduler.scheduler.get_last_lr()[0] for optimizer in self.optimizers]
+		except:
+			return False
 	def print_param_count(self):
 		[net.print_param_count() for net in self.nets]
 
@@ -263,7 +294,8 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 			print(f"    Parameters : {param_count/(1e6):6.4f} M")
 			print(f"    Size       : {param_size / (1024**3):6.4f} GB")
 			
-
+	
+	
 	
 
 

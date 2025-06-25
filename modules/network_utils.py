@@ -115,6 +115,7 @@ class Optimizer():
 		self.clipper = dic["clipper"]
 
 		self.optimizer.load_state_dict(dic["optimizer"])
+		self.optimizer.zero_grad(set_to_none=True)
 		self.scaler = dic["scaler"]
 		if self.scheduler is not None:
 			self.scheduler.scheduler.load_state_dict(dic["scheduler"])
