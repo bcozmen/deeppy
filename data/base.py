@@ -4,17 +4,14 @@ import torch
 from torch.utils.data import Dataset, DataLoader, random_split, Subset
 
 
-class Base(ABC):
+class DatasetBase(ABC):
     print_args = classmethod(print_args)
     def __init__(self, batch_size = 64, dataloader_args = {}):
         self.device = torch.device("cpu")
 
         self.dataloader_args = dataloader_args
         self.batch_size = batch_size
-
-
-
-
+        
         self.train_loader = []
         self.test_loader = []
         self.valid_loader = []
@@ -60,7 +57,7 @@ class Base(ABC):
 
 
 
-class DatasetLoader(Base):
+class DatasetLoader(DatasetBase):
     def __init__(self, data, splits = [0.8, 0.1, 0.1], file_name = None,
                 batch_size = 64, dataloader_args = {}):
         super().__init__(batch_size = batch_size,  dataloader_args = dataloader_args)

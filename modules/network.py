@@ -35,7 +35,8 @@ class Network(nn.Module):
 	"""
 	print_args = classmethod(print_args)
 	dependencies = [LayerGenerator, Optimizer]
-	def __init__(self, arch_params, decoder_params = None, task = "reg", optimizer_params = None, torch_compile = False, classify_threshold = 0.5):
+	def __init__(self, arch_params, decoder_params = None, task = "reg", 
+				optimizer_params = None, torch_compile = False, classify_threshold = 0.5):
 		super(Network, self).__init__()
 
 		self.torch_compile = torch_compile
@@ -48,7 +49,7 @@ class Network(nn.Module):
 		self.arch_params = arch_params
 		self.decoder_params = decoder_params
 
-		
+		self.encode, self.decode = None, None
 		self.generate()
 
 		self.optimizer_params = optimizer_params
@@ -112,7 +113,7 @@ class Network(nn.Module):
 
 
 	def back_propagate(self, loss):
-		self.optimizer.step(loss)
+		return self.optimizer.step(loss)
 
 	def scheduler_step(self):
 		self.optimizer.scheduler.step()

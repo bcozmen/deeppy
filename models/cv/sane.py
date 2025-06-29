@@ -21,10 +21,9 @@ class Sane(BaseModel):
 		input_dim= 201, latent_dim = 128, projection_dim = 30,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
 		gamma = [0.05,0.05], ntx_temp = 0.1,
-		device = None, amp = False,torch_compile = False, gradient_accumulation_steps = 1):
+		device = None, amp = False,torch_compile = False):
 
-		super().__init__(device= device, amp=amp, torch_compile=torch_compile, gradient_accumulation_steps=gradient_accumulation_steps)
-
+		super().__init__(device= device, amp=amp, torch_compile=torch_compile)
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp
@@ -57,8 +56,8 @@ class Sane(BaseModel):
 		self.project , self.project_params = self.build_projection_head()
 		self.classify, self.classify_params = self.build_classifier()
 		self.nets = [self.autoencoder, self.project, self.classify]
-		#[net.apply(self._init_weights_relu) for net in self.nets]
-
+		
+		
 		self.optimizer = self.configure_optimizer()
 		self.params = [self.autoencoder_params, self.project_params, self.classify_params]
 		self.objects = [self.recon_crit, self.ntx_crit, self.rot_crit]
@@ -241,17 +240,16 @@ class Sane(BaseModel):
 		del self.optimizer_params["optimizer_args"]["weight_decay"]
 		return Optimizer(optim_groups, **self.optimizer_params)
 	
-	def _init_weights_relu(self, module):
-		if isinstance(module, nn.Linear):
-			torch.nn.init.kaiming_uniform(module.weight, nonlinearity = "relu")
-			if module.bias is not None:
-				torch.nn.init.zeros_( module.bias)
-		elif isinstance(module, nn.Embedding):
-			torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
 	# =====================================================================
 	#HELPER FUNCTIONS
-
+	def _init_weights(self, module):
+		if isinstance(module, nn.Linear):
+			torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+			if module.bias is not None:
+				torch.nn.init.zeros_(   module.bias)
+		elif isinstance(module, nn.Embedding):
+			torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
 	def load(self, file_name):
 		#Load the model from the class.

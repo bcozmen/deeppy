@@ -36,13 +36,14 @@ class Metric():
         self.train_data,self.test_data = [], []
         self.train_data_ix,self.test_data_ix = [], []
 
-        self.grad_magnitutes = []
+        self.lrs = []
+        self.optimizer_metrics = []
         self.param_magnitutes = []
 
         self.reward, self.duration = 0,0
         self.duration_data, self.reward_data = [],[]
         
-        self.lrs = []
+        
 
         self.colors = [
             'tab:blue', 'tab:orange', 'tab:green', 'tab:red',
@@ -79,7 +80,8 @@ class Metric():
         self.plot_data(data,labels,log=log,show_result=show_result,save=save)
 
     def plot(self, log = True, show_result = False, save = None, 
-             window_size = 100, test_steps = 25, show_lrs = False, text = ""):
+              show_lrs = False, show_magnitutes = True,
+             window_size = 100, test_steps = 25, text = ""):
         """
         Plot the training and test data.
         Parameters
@@ -97,7 +99,7 @@ class Metric():
             test_window_size = None
         else:
             test_window_size = window_size // test_steps 
-        num_rows = 1 + int(show_lrs)
+        num_rows = 1 + int(show_lrs) + (1*int(show_magnitutes))
         fig, axes = plt.subplots(num_rows, figsize=(12, 10 * num_rows))
 
         if num_rows == 1:
@@ -131,25 +133,61 @@ class Metric():
         for data,label,color in zip(test_data, self.train_labels,self.colors):
             #if window_size is not None:
             #    data = self.gaussian_smooth(data, window_size=window_size)
+            data_ix = self.test_data_ix
             if test_window_size is not None and test_window_size > 0:
                 data = self.uniform_smooth(data, window_size=test_window_size)
-                self.test_data_ix = self.test_data_ix[test_window_size//2:-(test_window_size//2-1)]
+                data_ix = data_ix[test_window_size//2:-(test_window_size//2-1)]
             
             if log:
                 data = np.log10(data)
 
-            ax.plot(self.test_data_ix,data,'--', c = color, alpha=0.9)
+            ax.plot(data_ix,data,'--', c = color, alpha=0.9)
 
         ax.set_title(text)
         ax.legend()
 
         if show_lrs:
             ax = axes[1]
+            
             ax.plot(self.train_data_ix,np.log10(self.lrs), label = "Learning Rate")
             ax.set_ylabel("Log10 Learning Rate")
             ax.set_xlabel("Epoch")
+            ax.legend()
             ax.grid(True) 
-        
+
+        if show_magnitutes:
+            param_norms = torch.norm(torch.tensor(self.param_magnitutes), dim = 1)
+            
+            optimizer_metrics = torch.tensor(list(zip(*self.optimizer_metrics[10:])))
+            grad_norms =  torch.norm(optimizer_metrics[0], dim = 1)
+            #v_lrs = torch.mean(optimizer_metrics[1], dim = 1)
+            #momentum_norms = torch.meanoptimizer_metrics[2],dim=1)
+
+            ax = axes[2]
+            ax.plot(self.train_data_ix[10:],np.log10(grad_norms), c = "tab:blue")
+            ax.set_ylabel("Grad Magnitutes", c = "tab:blue")
+            ax.set_xlabel("Epoch")
+
+            ax_twin = ax.twinx()
+            ax_twin.plot(self.train_data_ix,param_norms, c = "tab:orange")
+            ax_twin.set_ylabel("Param Magnitutes Change (%)", c = "tab:orange")
+            ax.grid(True)
+
+            """
+            ax = axes[3]
+            for ix in range(momentum_norms.shape[0]):
+                ax.scatter(ix * np.ones_like(momentum_norms[0]), np.log10(momentum_norms[ix]), s= 10)
+            ax.set_ylabel("Momentum Norms (Log10)")
+            ax.set_xlabel("Epoch")
+            ax.grid(True)
+
+            ax = axes[4]
+            for ix in range(v_lrs.shape[0]):
+                ax.scatter(ix * np.ones_like(v_lrs[0]), np.log10(v_lrs[ix]), s= 10)
+            ax.set_ylabel("Adaptive Learning Rates (Log10)")
+            ax.set_xlabel("Epoch")
+            ax.grid(True)
+            """
         plt.xlabel('Steps')
         
         if save is not None:
@@ -285,14 +323,15 @@ class LearnFrame():
         #For RL models, if start_size is not reached
         
         
-        step = False
+        optimizer_return = False
         trains = []
-        while not step:
+        while optimizer_return == False:
             X = self.data.train_data()
             if X is None:
                 return None
-            train, step = self.model.optimize(X)
+            train, optimizer_return = self.model.optimize(X)
             trains.append(train)
+        step, optimizer_metrics = optimizer_return
         
         train = tuple(np.mean(trains,axis=0))
         
@@ -301,8 +340,8 @@ class LearnFrame():
 
         self.metric.train_data.append(train)
         self.metric.train_data_ix.append(self.optim_epoch)
-        self.metric.grad_magnitutes.append(self.model.grad_norm())
-        self.param_magnitutes.append(self.model.param_norm())
+        self.metric.optimizer_metrics.append(optimizer_metrics)
+        self.metric.param_magnitutes.append(self.model.param_norm())
         if last_lr:
             self.metric.lrs.append(last_lr[0])
         

@@ -9,7 +9,7 @@ class B_Vae(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
 	optimize_return_labels = ["Loss", "MSE Loss", "KL Loss"]
-	def __init__(self, network_params,  beta,  device = None, criterion = nn.MSELoss(), amp = False,):
+	def __init__(self, network_params,  beta,  device = None, criterion = nn.MSELoss(), amp = False):
 		super().__init__(device= device, criterion = criterion, amp=amp)
 		self.beta = beta
 		self.network_params = network_params

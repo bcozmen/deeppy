@@ -1,11 +1,11 @@
-from deeppy.data.base import Base
+from deeppy.data.base import DatasetBase
 
 
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch
 
 
-class GPTText(Base):
+class GPTText(DatasetBase):
     def __init__(self,train, tokenizer, context_size, test = None, valid = None,  batch_size = 64, test_size = 0.1):
         super().__init__(batch_size=batch_size)
         self.context_size = context_size

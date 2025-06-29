@@ -6,7 +6,7 @@ from deeppy.utils import print_args
 from deeppy.modules.network import Network
 from torch.cuda.amp import GradScaler
 
-class ClassMeta(type):
+class BaseClassMeta(type):
 	def __call__(cls, *args, **kwargs):
 		# Create instance without running __init__
 		obj = cls.__new__(cls, *args, **kwargs)
@@ -35,7 +35,7 @@ class ClassMeta(type):
 		return obj
 
 
-class CombinedMeta(ClassMeta, ABCMeta):
+class CombinedMeta(BaseClassMeta, ABCMeta):
 	pass
 
 class BaseModel(ABC, metaclass=CombinedMeta):
@@ -95,11 +95,9 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	optimize_return_labels = []
 
 	_to_device_methods = ["forward", "encode", "decode", "embed", "get_loss", "get_action", "optimize"]
-	def after_init(self):
-		self.train()
-		self.set_optimizers()
+	
 	def __init__(self, device = None, criterion = nn.MSELoss(), 
-			  	amp = False, torch_compile = False, gradient_accumulation_steps = 1):
+			  	amp = False, torch_compile = False):
 		"""
 		Initializes Base model
 		"""
@@ -114,8 +112,10 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.scaler = GradScaler(enabled=self.amp)
 		self.optimizers = None
 
-		self.gradient_accumulation_steps = gradient_accumulation_steps
 		self.epoch = 0
+	def after_init(self):
+		self.train()
+		self.set_optimizers()
 	def __call__(self, X):
 		return self.forward(X)
 
@@ -127,25 +127,25 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
 			loss, return_loss = self.get_loss(X)
 		
-		step = self.back_propagate(loss)
+		optimizer_return = self.back_propagate(loss)
 
 
-		return return_loss, step
+		return return_loss, optimizer_return
 	@torch.no_grad()
-	def test(self,X):
+	def test(self,X : tuple):
 		self.eval()
 		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
 			loss, return_loss = self.get_loss(self.ensure(X))
 		return return_loss
 	
 	@abstractmethod
-	def get_loss(self,X):
+	def get_loss(self,X : tuple):
 		pass
 	@abstractmethod
 	def back_propagate(self,loss):
 		pass
 	@abstractmethod
-	def forward(self,X):
+	def forward(self,X : tuple):
 		pass
 
 	#==========================================================================================
@@ -189,9 +189,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		if self.optimizers is None:
 			self.optimizers = [net.optimizer for net in self.nets]
 		for opt in self.optimizers:
-			opt.scaler = self.scaler    
-			opt.gradient_accumulation_steps = self.gradient_accumulation_steps
-		print(self.optimizers[0].gradient_accumulation_steps)
+			opt.scaler = self.scaler
 	
 	def scheduler_step(self):
 		#Take a scheduler step
@@ -257,24 +255,15 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 			net.load_states(net_dicts)
 
 	#===========================================================================================
-	# Metrics
-	def grad_norm(self):
-		total_norm = 0
-		for model in self.nets:
-			for p in model.parameters():
-				if p.grad is not None:
-					total_norm += p.grad.data.norm(2).item() ** 2
-		total_norm = total_norm ** 0.5
-		return total_norm
-	
+
 	def param_norm(self):
-		total_norm = 0
+		total_norms = []
 		for model in self.nets:
 			for p in model.parameters():
-				if p is not None:
-					total_norm += p.data.norm(2).item() ** 2
-		total_norm = total_norm ** 0.5
-		return total_norm
+				if p is not None and p.requires_grad:
+					total_norms.append(p.data.norm(2).item())
+
+		return total_norms
 	def last_lr(self):
 		#Net the last_lr if a scheduler is used
 		try:

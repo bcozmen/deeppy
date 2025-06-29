@@ -1,6 +1,5 @@
 #LOAD HALF PRECISION ALWAYS
 
-from deeppy.data.base import Base
 
 
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -151,7 +150,7 @@ class IngpData(Dataset):
         #Random index
         #Sample (window_size - hash_chunk_size )points in 3D space (512,3)
         points1 = torch.rand((self.hash_chunk_size, 3))
-        points2 = torch.rand((self.hash_chunk_size, 3))
+        #points2 = torch.rand((self.hash_chunk_size, 3))
         
         #Get 2 random views of the object
         object_parent_path = self.all_objects_2d[idx]
@@ -161,7 +160,7 @@ class IngpData(Dataset):
         obj2_path, obj_2_transform = object_parent_path[idx_child[1]] 
 
         [t1,p1,m1], r1 = self.load_weights(obj1_path, points1), obj_1_transform
-        (t2,p2,m2), r2 = self.load_weights(obj2_path, points2), obj_2_transform
+        (t2,p2,m2), r2 = self.load_weights(obj2_path, points1), obj_2_transform
 
         return t1, p1, m1, r1, t2, p2, m2, r2
 

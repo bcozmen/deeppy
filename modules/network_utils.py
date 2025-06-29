@@ -32,7 +32,10 @@ class Optimizer():
 	print_args = classmethod(print_args)
 	dependencies = [Scheduler]
 
-	def __init__(self,model, configure_optimizer = None, optimizer = optim.AdamW,  optimizer_args = {}, clipper = None, clipper_params = {}, scheduler_params = None):
+	def __init__(self,model, configure_optimizer = None, gradient_accumulation_steps = 1,
+			  optimizer = optim.AdamW,  optimizer_args = {}, 
+			  clipper = None, clipper_params = {}, 
+			  scheduler_params = None):
 		
 		if configure_optimizer is not None:
 			model, optimizer_args = configure_optimizer(model,optimizer_args)
@@ -46,17 +49,18 @@ class Optimizer():
 			self.model = model
 			self.optimizer = optimizer(self.model.parameters() , **optimizer_args)
 		
-		
+		self.optimizer_args = optimizer_args
+		self.scheduler_params = scheduler_params
 		self.clipper = clipper
 		self.clipper_params = clipper_params
-		self.step_counter = 0
+		self._step_counter = 0
 		self.optimizer_steps_counter = 0
 		
 		
 
 		#Initialize with neutral values and then later in in base model.set_optimizerrs
 		self.optimizer.zero_grad(set_to_none=True)
-		self.gradient_accumulation_steps = 1
+		self.gradient_accumulation_steps = int(gradient_accumulation_steps)
 		self.scaler = GradScaler(enabled=False)
 
 		self.scheduler = None
@@ -66,24 +70,26 @@ class Optimizer():
 	def step(self, loss):
 		# Calculate loss wrt accumulation
 		loss = loss / self.gradient_accumulation_steps
-
 		# Compute gradients
 		self.scaler.scale(loss).backward()
 
 		# If gradient accumulation steps is reached, perform optimization step
-		if (self.step_counter + 1) % self.gradient_accumulation_steps == 0:
+		if (self._step_counter + 1) % self.gradient_accumulation_steps == 0:
 			# Gradient clipping
-			if self.clipper is not None:
-				self.scaler.unscale_(self.optimizer)  # Required before clipping
+			self.scaler.unscale_(self.optimizer) 
+			metrics = self.log_metrics()
 
+			if self.clipper is not None:
 				if self.nn_model:
-					self.clipper(self.model.parameters(), **self.clipper_params)
+					grad_norm =self.clipper(self.model.parameters(), **self.clipper_params)
 				else:
 					params = [p for group in self.model for p in group["params"]]
-					self.clipper(params, **self.clipper_params)
-
+					grad_norm = self.clipper(params, **self.clipper_params)
+				
+			
 			# Optimizer step
 			self.scaler.step(self.optimizer)
+			
 			self.scaler.update()
 			self.optimizer.zero_grad(set_to_none=True)
 
@@ -92,10 +98,10 @@ class Optimizer():
 				self.scheduler.step()
 			
 			self.optimizer_steps_counter += 1
-			self.step_counter += 1
-			return self.optimizer_steps_counter
+			self._step_counter += 1
+			return self.optimizer_steps_counter, metrics
 		else:
-			self.step_counter += 1
+			self._step_counter += 1
 			return False
 
 	def save_states(self):
@@ -108,7 +114,9 @@ class Optimizer():
 			"clipper" : self.clipper,
 			"clipper_params" : self.clipper_params,
 			"scheduler" : sch,
-			"scaler" : self.scaler}
+			"scaler" : self.scaler,
+			"optimizer_steps_counter" : self.optimizer_steps_counter,
+			"_step_counter" : self._step_counter,}
 
 	def load_states(self, dic):
 		self.clipper_params = dic["clipper_params"]
@@ -116,16 +124,39 @@ class Optimizer():
 
 		self.optimizer.load_state_dict(dic["optimizer"])
 		self.optimizer.zero_grad(set_to_none=True)
+		self.optimizer_steps_counter = dic["optimizer_steps_counter"]
+		self._step_counter = dic["_step_counter"]
 		self.scaler = dic["scaler"]
 		if self.scheduler is not None:
 			self.scheduler.scheduler.load_state_dict(dic["scheduler"])
 
+	def log_metrics(self):
+		# Calculate gradient norm
+		grad_norms, vs, ms = [], [], []
+		for group in self.optimizer.param_groups:
+			for p in group["params"]:
+				
+				state = self.optimizer.state[p]
+				
+				if 'exp_avg_sq' in state:
+					v_t = state['exp_avg_sq']
+					# Element-wise effective lr
+					eff_lr_tensor = self.optimizer_args["lr"] / (v_t.sqrt() + group['eps'])
+					# Log the average effective lr
+					eff_lr_mean = eff_lr_tensor.mean().item()
+					vs.append(eff_lr_mean)
+				if 'exp_avg' in state:
+					m_t = state['exp_avg']
+					momentum_norm = m_t.norm(2).item()
+					ms.append(momentum_norm)
+				
+				if p.grad is not None:
+					param_norm = p.grad.detach().norm(2).item()
+					grad_norms.append(param_norm)
+		
+		return (grad_norms,vs,ms)
 
-class recurrent_layer_helper(nn.Module):
-    def forward(self,x):
-        tensor, states = x
-        self.states = states
-        return tensor
+
 
 
 #Should be more generalized with arguments
@@ -151,9 +182,6 @@ class LayerGenerator():
 
 			layer = block(inp,out,**args)
 			net.append(layer)
-
-			#if block.__name__ in ["RNN","LSTM", "GRU"]:
-			#	net.append(recurrent_layer_helper())
 
 			#Go for later blocks
 			for block,bargs in zip(blocks[1:], block_args[1:]):
@@ -221,13 +249,5 @@ class LayerGenerator():
 
 		if layer.bias is not None and self.weight_init is not None:
 			nn.init.zeros_(layer.bias)
-
-
-class WeightInit():
-	def __init__(self,parameters):
-		pass
-
-	def initialize(self, net):
-		pass
 
 

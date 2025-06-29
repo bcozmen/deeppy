@@ -1,7 +1,7 @@
 import random
 from collections import deque, namedtuple
 
-from deeppy.data.base import Base
+from deeppy.data.base import DatasetBase
 
 import torch
 import pickle
@@ -21,7 +21,7 @@ class ReplayBuffer():
     def sample(self, batch_size):
         return tuple([torch.stack(k) for k in (zip(*random.sample(self.buffer,batch_size)))])
 
-class EnvData(Base):
+class EnvData(DatasetBase):
     def __init__(self, env, buffer_size = 20000, batch_size = 128, start_size = 128):
         super().__init__( batch_size = batch_size)
         self.memory = ReplayBuffer(buffer_size)
