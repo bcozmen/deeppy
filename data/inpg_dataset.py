@@ -1,17 +1,11 @@
-#LOAD HALF PRECISION ALWAYS
-
-
-
 from torch.utils.data import Dataset, DataLoader, random_split
 import torch
 import torch.nn as nn
 import glob
-import json
 
 import numpy as np
 import safetensors.torch as sf 
 import pickle
-import time
 
 class GridEncoder():
     def __init__(self, levels = 16, base_resolution = 16,  align_corners = True, hashmap_size = 2**19):
@@ -150,7 +144,7 @@ class IngpData(Dataset):
         #Random index
         #Sample (window_size - hash_chunk_size )points in 3D space (512,3)
         points1 = torch.rand((self.hash_chunk_size, 3))
-        #points2 = torch.rand((self.hash_chunk_size, 3))
+        points2 = torch.rand((self.hash_chunk_size, 3))
         
         #Get 2 random views of the object
         object_parent_path = self.all_objects_2d[idx]
@@ -160,10 +154,19 @@ class IngpData(Dataset):
         obj2_path, obj_2_transform = object_parent_path[idx_child[1]] 
 
         [t1,p1,m1], r1 = self.load_weights(obj1_path, points1), obj_1_transform
-        (t2,p2,m2), r2 = self.load_weights(obj2_path, points1), obj_2_transform
+        (t2,p2,m2), r2 = self.load_weights(obj2_path, points2), obj_2_transform
 
         return t1, p1, m1, r1, t2, p2, m2, r2
+    
+    def __getitem__rot(self,idx):
+        idx = idx % len(self.all_objects_2d)
+        points1 = torch.rand((self.hash_chunk_size, 3))
 
+        returns = []
+        for obj_path, rot in self.all_objects_2d[idx]:
+            (t,p,m) = self.load_weights(obj_path, points1)
+            returns.append((t,p,rot))
+        return returns
     def load_weights(self, file_path, points):
         
         
