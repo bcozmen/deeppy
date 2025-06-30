@@ -85,6 +85,12 @@ class Sane(BaseModel):
 	def embed(self,X):
 		return torch.mean(self.encode(X), dim=1)
 
+	def predict_rotation(self, X):
+		X,p = X
+		z = self.autoencoder.encode((X,p))
+		z_rot = self.classify(z[:,0,:]) #[B_size x 4]
+		return z_rot
+
 	def get_loss(self,X):
 		x_1, p_1,m_1,r_1, x_2, p_2,m_2,r_2 = X
 		r_1, r_2 = self.rot_crit.euler_to_quaternion(r_1), self.rot_crit.euler_to_quaternion(r_2)

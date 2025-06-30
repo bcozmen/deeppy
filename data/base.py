@@ -55,8 +55,6 @@ class DatasetBase(ABC):
     def load(self, file_name):
         pass
 
-
-
 class DatasetLoader(DatasetBase):
     def __init__(self, data, splits = [0.8, 0.1, 0.1], file_name = None,
                 batch_size = 64, dataloader_args = {}):

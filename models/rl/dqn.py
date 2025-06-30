@@ -78,7 +78,7 @@ class DQN(BaseModel):
         return loss, loss.item()
 
     def back_propagate(self,loss):
-        self.q_net.back_propagate(loss,scaler)
+        self.q_net.back_propagate(loss)
         self.target_updater.update()
     
 

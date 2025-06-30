@@ -104,13 +104,17 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.device = device
 		self.criterion = criterion
 		self.training = True
+		
 		self.nets = []
 		self.params = []
 		self.objects = []
+		
 		self.amp = amp
 		self.torch_compile = torch_compile
+		
 		self.scaler = GradScaler(enabled=self.amp)
 		self.optimizers = None
+
 
 		self.epoch = 0
 	def after_init(self):
