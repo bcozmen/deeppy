@@ -23,11 +23,10 @@ class SaneLinearTokenizerBeforePosition(nn.Module):
         self.divide_ix = max_positions[1]
         self.linear_hash= nn.Linear(in_features,out_features)
         self.linear_mlp = nn.Linear(in_features,out_features)
-        self.position = nn.Embedding(1, out_features)
     def forward(self,X):
         x,p = X
-        hash,mlp = x[:,:-self.divide_ix],  x[:, -self.divide_ix:-1]
-        return torch.cat((self.linear_hash(hash), self.linear_mlp(mlp), self.position(0)), dim=1)
+        hash,mlp = x[:,:-self.divide_ix],  x[:, -self.divide_ix:]
+        return torch.cat( (self.linear_hash(hash), self.linear_mlp(mlp)), dim=1),p
 
 class ChunkwiseLinearTokenizer(nn.Module):
     def __init__(self, chunk_size, out_dim):

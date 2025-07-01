@@ -56,7 +56,7 @@ class DatasetBase(ABC):
         pass
 
 class DatasetLoader(DatasetBase):
-    def __init__(self, data, splits = [0.8, 0.1, 0.1], file_name = None,
+    def __init__(self, data, test_data = None, splits = None, file_name = None,
                 batch_size = 64, dataloader_args = {}):
         super().__init__(batch_size = batch_size,  dataloader_args = dataloader_args)
         self.data = data
@@ -104,6 +104,21 @@ class DatasetLoader(DatasetBase):
             self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_args)
         if len(self.valid_dataset) > 0:
             self.valid_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size, **self.dataloader_args)
+
+class DatasetLoaderEasy(DatasetBase):
+    def __init__(self, train_dataset, test_dataset = None, batch_size = 64, dataloader_args = {}):
+        super().__init__(batch_size = batch_size,  dataloader_args = dataloader_args)
+        self.train_dataset = train_dataset
+        self.test_dataset = test_dataset
+
+        self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, **self.dataloader_args)
+        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_args)
+    
+    def save(self,file_name):
+        pass
+
+    def load(self, data, file_name):
+        pass
 
 
 

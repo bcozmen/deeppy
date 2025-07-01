@@ -110,7 +110,7 @@ class GridEncoder():
     
 
 class IngpData(Dataset):
-    def __init__(self, data_path, config, window_size = None, token_size = None, max_layer_width = 64, device = None):
+    def __init__(self, data_path, config, window_size = None, token_size = None, max_layer_width = 64, device = None, train = True):
         self.data_path = data_path
         self.config = config
 
@@ -136,6 +136,15 @@ class IngpData(Dataset):
         #EXP1
         self.max_positions = torch.tensor([self.grid_encoder.hash_table_indices_end[-1]+1 ,54])
 
+        self.train = train
+        len_train = int(0.85 * len(self.all_objects_2d))
+        len_test = len(self.all_objects_2d) - len_train
+        if self.train:
+            self.all_objects_2d = self.all_objects_2d[:len_train]
+        else:
+            self.all_objects_2d = self.all_objects_2d[len_train:]
+
+
     def __len__(self):
         return len(self.all_objects_2d) * 20000
     
@@ -144,7 +153,7 @@ class IngpData(Dataset):
         #Random index
         #Sample (window_size - hash_chunk_size )points in 3D space (512,3)
         points1 = torch.rand((self.hash_chunk_size, 3))
-        points2 = torch.rand((self.hash_chunk_size, 3))
+        #points2 = torch.rand((self.hash_chunk_size, 3))
         
         #Get 2 random views of the object
         object_parent_path = self.all_objects_2d[idx]
@@ -154,7 +163,7 @@ class IngpData(Dataset):
         obj2_path, obj_2_transform = object_parent_path[idx_child[1]] 
 
         [t1,p1,m1], r1 = self.load_weights(obj1_path, points1), obj_1_transform
-        (t2,p2,m2), r2 = self.load_weights(obj2_path, points2), obj_2_transform
+        (t2,p2,m2), r2 = self.load_weights(obj2_path, points1), obj_2_transform
 
         return t1, p1, m1, r1, t2, p2, m2, r2
     

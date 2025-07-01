@@ -8,8 +8,8 @@ import torch.nn as nn
 from deeppy.utils import print_args
 
 from deeppy import Network, SqueezeLastDimention, QuaternionLoss, NT_Xent, Optimizer
-from deeppy import LinearTokenizerBeforePosition
-from deeppy import SaneXYZPositionalEmbedding, SanePositionalEmbedding
+from deeppy import SaneLinearTokenizerBeforePosition
+from deeppy import SaneXYZPositionalEmbedding
 from deeppy.models import BaseModel
 
 class Sane(BaseModel):
@@ -72,9 +72,10 @@ class Sane(BaseModel):
 		z = self.autoencoder.encode((X,p))
 
 		#z[:,0,4:] = 0
-		zp = self.project(z[:,1:])
+		zp = self.project(z[:,:-1])
+		z_rot = self.classify(z[:,-1, :])
 		y = self.autoencoder.decode((z,p))
-		return z, y, zp
+		return z, y, zp, z_rot
 
 	def encode(self,X):
 		return self.autoencoder.encode(X)
@@ -95,8 +96,8 @@ class Sane(BaseModel):
 		x_1, p_1,m_1,r_1, x_2, p_2,m_2,r_2 = X
 		r_1, r_2 = self.rot_crit.euler_to_quaternion(r_1), self.rot_crit.euler_to_quaternion(r_2)
 
-		z_1, y_1, zp_1 = self((x_1, p_1))
-		z_2, y_2, zp_2 = self((x_2, p_2))
+		z_1, y_1, zp_1, z_rot_1 = self((x_1, p_1))
+		z_2, y_2, zp_2, z_rot_2 = self((x_2, p_2))
 		
 		#Compute reconstruction loss
 		x = torch.cat([x_1, x_2], dim=0)
@@ -105,9 +106,7 @@ class Sane(BaseModel):
 		recon_loss = self.recon_crit(y*m,x)
 		
 		#Compute rotation loss
-		z_rot1 = self.classify(z_1[:,0,:]) #[B_size x 4]
-		z_rot2 = self.classify(z_2[:,0,:]) #[B_size x 4]
-		rot_loss = self.rot_crit(z_rot1, z_rot2, r_1, r_2)
+		rot_loss = self.rot_crit(z_rot_1, z_rot_2, r_1, r_2)
 
 		#Compute NTX loss
 		ntx_loss = self.ntx_crit(zp_1, zp_2)
@@ -126,7 +125,7 @@ class Sane(BaseModel):
 		encoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		decoder = nn.TransformerEncoderLayer(d_model = self.embed_dim, nhead= self.num_heads, dim_feedforward = 4* self.embed_dim, batch_first= True, norm_first = True, dropout=self.dropout, bias= self.bias, activation = nn.GELU())
 		
-		blocks = [LinearTokenizerBeforePosition,SaneXYZPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear]
+		blocks = [SaneLinearTokenizerBeforePosition,SaneXYZPositionalEmbedding, nn.Dropout, nn.TransformerEncoder, nn.Linear]
 		encoder_params = {
 			"blocks": blocks,
 			"block_args":[
