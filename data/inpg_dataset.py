@@ -110,7 +110,8 @@ class GridEncoder():
     
 
 class IngpData(Dataset):
-    def __init__(self, data_path, config, window_size = None, token_size = None, max_layer_width = 64, device = None, train = True):
+    def __init__(self, data_path, config, window_size = None, token_size = None, max_layer_width = 64, device = None, train = True, 
+                 pos_token_size = 10, noise_augment = True):
         self.data_path = data_path
         self.config = config
 
@@ -118,8 +119,10 @@ class IngpData(Dataset):
         num_levels = self.config['hash_encoding']["num_levels"]  # Number of levels in the grid encoder
         self.grid_encoder = GridEncoder(base_resolution=base_resolution, levels=num_levels, hashmap_size= 2**19)
 
+        self.noise_augment = noise_augment
         self.window_size = window_size
-        self.hash_chunk_size = self.window_size - 53 - 1# 53 is the size of the MLP tokens # And one for rotation index
+        self.pos_token_size = pos_token_size
+        self.hash_chunk_size = self.window_size - 53 - self.pos_token_size# 53 is the size of the MLP tokens # And one for rotation index
         self.token_size = token_size
         self.max_layer_width = max_layer_width
 
@@ -134,7 +137,7 @@ class IngpData(Dataset):
         #self.max_positions[2] = (hash_table_indices_end[-1]  - hash_table_indices_end[-2] ).item() + 1
 
         #EXP1
-        self.max_positions = torch.tensor([self.grid_encoder.hash_table_indices_end[-1]+1 ,54])
+        self.max_positions = torch.tensor([self.grid_encoder.hash_table_indices_end[-1]+1 ,53 + self.pos_token_size])
 
         self.train = train
         len_train = int(0.85 * len(self.all_objects_2d))
@@ -152,8 +155,10 @@ class IngpData(Dataset):
         idx = idx % len(self.all_objects_2d)
         #Random index
         #Sample (window_size - hash_chunk_size )points in 3D space (512,3)
-        points1 = torch.rand((self.hash_chunk_size, 3))
-        #points2 = torch.rand((self.hash_chunk_size, 3))
+        points = torch.rand((self.hash_chunk_size * 4, 3))
+        points1 = torch.randperm(points)[:self.hash_chunk_size]
+        points2 = torch.randperm(points)[:self.hash_chunk_size]
+        
         
         #Get 2 random views of the object
         object_parent_path = self.all_objects_2d[idx]
@@ -163,7 +168,7 @@ class IngpData(Dataset):
         obj2_path, obj_2_transform = object_parent_path[idx_child[1]] 
 
         [t1,p1,m1], r1 = self.load_weights(obj1_path, points1), obj_1_transform
-        (t2,p2,m2), r2 = self.load_weights(obj2_path, points1), obj_2_transform
+        (t2,p2,m2), r2 = self.load_weights(obj2_path, points2), obj_2_transform
 
         return t1, p1, m1, r1, t2, p2, m2, r2
     
@@ -206,6 +211,10 @@ class IngpData(Dataset):
 
         #(C,256)
         hash_tokens = hash_tokens.reshape(C,-1)
+        
+        #Augment
+        if self.noise_augment:
+            hash_tokens += torch.randn_like(hash_tokens) * 0.01
         hash_masks = torch.ones_like(hash_tokens)
         #(C,128)
 
@@ -220,7 +229,7 @@ class IngpData(Dataset):
         
         
 
-        rot_t = torch.zeros((1, self.token_size))
+        rot_t = torch.zeros((self.pos_token_size, self.token_size))
         rot_m = torch.zeros_like(rot_t)
         
 
@@ -229,9 +238,10 @@ class IngpData(Dataset):
         index_tokens = indices_flat.reshape(C,-1)
         hash_pos = torch.cat([points, index_tokens], dim=1)
         mlp_pos = torch.zeros((mlp_tokens.shape[0],hash_pos.shape[1]))
-        mlp_pos[:,0] = torch.arange(0,mlp_pos.shape[0]) + 1
+        mlp_pos[:,0] = torch.arange(0,mlp_pos.shape[0]) + self.pos_token_size
         
-        rot_p = torch.zeros((1,hash_pos.shape[1]))
+        rot_p = torch.zeros((self.pos_token_size,hash_pos.shape[1]))
+        rot_p[:,0] = torch.arange(0,self.pos_token_size)
 
         return torch.vstack([hash_tokens, mlp_tokens,rot_t]), torch.vstack([hash_pos, mlp_pos,rot_p]), torch.vstack([hash_masks,mlp_masks,rot_m])
     
