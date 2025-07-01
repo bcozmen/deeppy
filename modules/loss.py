@@ -211,19 +211,18 @@ class QuaternionLoss(nn.Module):
             qpq_inv = self.quaternion_multiply(qp, q_conj)  # (N,B,4)
 
             return qpq_inv[..., 1:]  # (N,B,3)
-    def quaternion_relative_loss(self, q1_pred, q2_pred, q1_true, q2_true):
-        q1_pred = self.normalize_quaternion(q1_pred)
-        q2_pred = self.normalize_quaternion(q2_pred)
+    def quaternion_relative_loss(self, q_pred, q1_true, q2_true):
+        q_pred = self.normalize_quaternion(q_pred)
         q1_true = self.normalize_quaternion(q1_true)
         q2_true = self.normalize_quaternion(q2_true)
 
-        q1_pred_inv = self.quaternion_conjugate(q1_pred)
+        
         q1_true_inv = self.quaternion_conjugate(q1_true)
 
-        rel_pred = self.quaternion_multiply(q2_pred, q1_pred_inv)
-        rel_true = self.quaternion_multiply(q2_true, q1_true_inv)
 
-        dot = torch.abs(torch.sum(rel_pred * rel_true, dim=-1))
+        q_true = self.quaternion_multiply(q2_true, q1_true_inv)
+
+        dot = torch.abs(torch.sum(q_pred * q_true, dim=-1))
         dot = torch.clamp(dot, 0.0, 1.0)
 
         #loss = (1.0 - dot) ** 2

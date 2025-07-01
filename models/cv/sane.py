@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from deeppy.utils import print_args
 
-from deeppy import Network, SqueezeLastDimention, QuaternionLoss, NT_Xent, Optimizer
+from deeppy import Network, SqueezeLastDimention,SqueezeLastDimention2Inputs, QuaternionLoss, NT_Xent, Optimizer
 from deeppy import SaneLinearTokenizerBeforePosition
 from deeppy import SaneXYZPositionalEmbedding
 from deeppy.models import BaseModel
@@ -15,10 +15,10 @@ from deeppy.models import BaseModel
 class Sane(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
-	optimize_return_labels = ["Loss", "Recon Loss", "NTX Loss", "Rot Loss"]
+	optimize_return_labels = ["Loss", "Recon Loss", "NTX Loss", "Rot Loss"]	
 
 	def __init__(self, optimizer_params, max_positions, 
-		input_dim= 201, latent_dim = 128, projection_dim = 30,
+		input_dim= 201, latent_dim = 128, projection_dim = 30, pos_token_size = 10,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
 		gamma = [0.05,0.05], ntx_temp = 0.1,
 		device = None, amp = False,torch_compile = False):
@@ -31,6 +31,7 @@ class Sane(BaseModel):
 		self.recon_crit = nn.MSELoss()
 		self.ntx_crit = NT_Xent(temp = ntx_temp)
 		self.gamma = torch.tensor(gamma).to(device)
+		self.pos_token_size = pos_token_size
 
 		
 		#Encoder
@@ -67,16 +68,6 @@ class Sane(BaseModel):
 	def init_objects(self):
 		self.recon_crit, self.ntx_crit, self.rot_crit = self.objects
 
-	def forward(self, X):
-		X,p = X
-		z = self.autoencoder.encode((X,p))
-
-		#z[:,0,4:] = 0
-		zp = self.project(z[:,:-1])
-		z_rot = self.classify(z[:,-1, :])
-		y = self.autoencoder.decode((z,p))
-		return z, y, zp, z_rot
-
 	def encode(self,X):
 		return self.autoencoder.encode(X)
 
@@ -85,19 +76,23 @@ class Sane(BaseModel):
 
 	def embed(self,X):
 		return torch.mean(self.encode(X), dim=1)
-
-	def predict_rotation(self, X):
+	
+	def forward(self, X):
 		X,p = X
 		z = self.autoencoder.encode((X,p))
-		z_rot = self.classify(z[:,0,:]) #[B_size x 4]
-		return z_rot
+		zp = self.project(z[:,:-self.pos_token_size, :])
+		y = self.autoencoder.decode((z,p))
+		return z, y, zp
 
 	def get_loss(self,X):
 		x_1, p_1,m_1,r_1, x_2, p_2,m_2,r_2 = X
 		r_1, r_2 = self.rot_crit.euler_to_quaternion(r_1), self.rot_crit.euler_to_quaternion(r_2)
 
-		z_1, y_1, zp_1, z_rot_1 = self((x_1, p_1))
-		z_2, y_2, zp_2, z_rot_2 = self((x_2, p_2))
+		z_1, y_1, zp_1 = self((x_1, p_1))
+		z_2, y_2, zp_2 = self((x_2, p_2))
+
+		q_pred = self.classify((z_1[:,-self.pos_token_size,:], z_2[:,-self.pos_token_size,:]))
+		
 		
 		#Compute reconstruction loss
 		x = torch.cat([x_1, x_2], dim=0)
@@ -106,7 +101,7 @@ class Sane(BaseModel):
 		recon_loss = self.recon_crit(y*m,x)
 		
 		#Compute rotation loss
-		rot_loss = self.rot_crit(z_rot_1, z_rot_2, r_1, r_2)
+		rot_loss = self.rot_crit(q_pred, r_1, r_2)
 
 		#Compute NTX loss
 		ntx_loss = self.ntx_crit(zp_1, zp_2)
@@ -205,25 +200,18 @@ class Sane(BaseModel):
 		return Network(**network_params).to(self.device), network_params
 
 	def build_classifier(self):
-		arch_params = {
-			"blocks":[nn.Linear],
-			"block_args":[
-				{
-					"in_features": self.latent_dim,
-					"out_features" : 4,
-				},
-			],
-			"out_act": nn.Identity,
-			"weight_init":"uniform",
+		arch_params1 = {
+			"blocks":[SqueezeLastDimention2Inputs],
 		}
-		arch_params = {
-			"layers":[self.latent_dim, self.projection_dim, 4],
+
+		arch_params2 = {
+			"layers":[self.latent_dim * 2 * self.pos_token_size, self.projection_dim, 4],
 			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
 			"out_act": nn.Identity,
 			"weight_init":"uniform",
 		}
 		network_params = {
-			"arch_params": [arch_params],
+			"arch_params": [arch_params1, arch_params2],
 			"torch_compile" : self.torch_compile,
 		}
 
