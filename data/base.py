@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from deeppy.utils import print_args
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split, Subset
+from torch.utils.data import Dataset, DataLoader, random_split, Subset, Sampler
 
 
 class DatasetBase(ABC):
@@ -55,10 +55,37 @@ class DatasetBase(ABC):
     def load(self, file_name):
         pass
 
+
+class UniquePerBatchSampler(Sampler):
+    def __init__(self, dataset_size, num_repeats, batch_size):
+        if batch_size > dataset_size:
+            raise ValueError("Batch size cannot be greater than dataset size for uniqueness.")
+        self.dataset_size = dataset_size
+        self.num_repeats = num_repeats
+        self.batch_size = batch_size
+        self.len_per_epoch = int(dataset_size / batch_size) * batch_size
+
+    def __iter__(self):
+        # Repeat indices num_repeats times, shuffle each repeat independently
+        indices = torch.stack([
+            torch.randperm(self.dataset_size) for _ in range(self.num_repeats)
+        ])[:,:self.len_per_epoch].flatten()
+
+        return iter(indices.tolist())
+
+    def __len__(self):
+        return (self.len_per_epoch * self.num_repeats) 
+
 class DatasetLoader(DatasetBase):
-    def __init__(self, data, test_data = None, splits = None, file_name = None,
+    def __init__(self, data, test_data = None, splits = None, file_name = None, repeat = 1,
                 batch_size = 64, dataloader_args = {}):
         super().__init__(batch_size = batch_size,  dataloader_args = dataloader_args)
+
+        self.repeat = repeat
+        if repeat > 1 :
+            dataloader_args['shuffle'] = False
+        
+
         self.data = data
         if file_name is not None:
             self.load(data, file_name)
@@ -79,10 +106,18 @@ class DatasetLoader(DatasetBase):
 
         self.train_dataset, self.test_dataset,self.valid_dataset = random_split(data, lengths.tolist())
 
+        if self.repeat > 1:
+            self.dataloader_args['sampler'] = UniquePerBatchSampler(len(self.train_dataset), self.repeat, self.batch_size)
         self.train_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, **self.dataloader_args)
+        
+        
         if len(self.test_dataset) > 0:
+            if self.repeat > 1:
+                self.dataloader_args['sampler'] = UniquePerBatchSampler(len(self.test_dataset), self.repeat, self.batch_size)
             self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_args)
         if len(self.valid_dataset) > 0:
+            if self.repeat > 1:
+                self.dataloader_args['sampler'] = UniquePerBatchSampler(len(self.valid_dataset), self.repeat, self.batch_size)
             self.valid_loader = DataLoader(self.valid_dataset, batch_size=self.batch_size, **self.dataloader_args)
 
     def save(self,file_name):

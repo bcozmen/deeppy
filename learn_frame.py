@@ -279,6 +279,7 @@ class LearnFrame():
         self.model=model
         self.return_labels = self.model.optimize_return_labels
 
+        
         try:
             self.test_return_labels = self.model.test_return_labels
         except:
@@ -316,21 +317,19 @@ class LearnFrame():
         -------
         loss
             Loss objects (shape depends on the algorithm)
-        """
-
-        
-
-        #For RL models, if start_size is not reached
-        
-        
+        """        
+        self.model.train()
         optimizer_return = False
         trains = []
         while optimizer_return == False:
+            #Get the next batch
             X = self.data.train_data()
             if X is None:
-                return None
+                return 
+            
             train, optimizer_return = self.model.optimize(X)
-            trains.append(train)
+            if train != False:
+                trains.append(train)
         step, optimizer_metrics = optimizer_return
         
         train = tuple(np.mean(trains,axis=0))
@@ -349,6 +348,8 @@ class LearnFrame():
         
 
     def test(self, steps = 1):
+        self.model.eval()
+        test_return = False
         losses = []
         for _ in range(steps):
             if isinstance(self.data, EnvData):
@@ -357,10 +358,13 @@ class LearnFrame():
                 break
                 
             else:
+                while test_return == False:
+                    X = self.data.test_data()
                 
-                X = self.data.test_data()
-                loss = self.model.test(X)
-                losses.append(loss)
+                    loss, test_return = self.model.test(X)
+                    if loss != False:
+                        losses.append(loss)
+                
         
         loss = tuple(np.mean(losses,axis=0))
                 

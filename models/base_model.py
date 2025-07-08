@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod,ABCMeta
 from deeppy.utils import print_args
 from deeppy.modules.network import Network
 from torch.cuda.amp import GradScaler
+import queue
 
 class BaseClassMeta(type):
 	def __call__(cls, *args, **kwargs):
@@ -34,6 +35,32 @@ class BaseClassMeta(type):
 				setattr(obj, name, wrapped)
 		return obj
 
+
+class Stream():
+	def __init__(self):
+		self.current = torch.cuda.stream()
+		self.current_loaded = False
+		self.next = torch.cuda.stream()
+		self.next_loaded = False
+	def load_stream(self):
+		if not self.current_loaded:
+			self.current_loaded = True
+			return self.current
+		elif not self.next_loaded:
+			self.next_loaded = True
+			return self.next
+		else:
+			return False
+	def wait_stream(self):
+		temp = self.current
+
+		self.current = self.next
+		self.current_loaded = self.next_loaded 
+
+		self.next = temp
+		self.next_loaded = False
+		return self.next
+		
 
 class CombinedMeta(BaseClassMeta, ABCMeta):
 	pass
@@ -94,16 +121,17 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	dependencies = []
 	optimize_return_labels = []
 
-	_to_device_methods = ["forward", "encode", "decode", "embed", "get_loss", "get_action", "optimize"]
-	
+	#_to_device_methods = ["forward", "encode", "decode", "embed", "get_loss", "get_action", "optimize"]
+	_to_device_methods = ["optimize", "test"]
 	def __init__(self, device = None, criterion = nn.MSELoss(), 
-			  	amp = False, torch_compile = False):
+			  	amp = False, torch_compile = False, gpu_prefetch = 1):
 		"""
 		Initializes Base model
 		"""
 		self.device = device
 		self.criterion = criterion
 		self.training = True
+		self.gpu_prefetch = gpu_prefetch
 		
 		self.nets = []
 		self.params = []
@@ -114,6 +142,9 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		
 		self.scaler = GradScaler(enabled=self.amp)
 		self.optimizers = None
+
+		self.streams = [torch.cuda.Stream() for i in range(self.gpu_prefetch * 2 + 2)]
+		self.train_queue, self.test_queue = [], []
 
 
 		self.epoch = 0
@@ -127,20 +158,28 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		return "\n=======================================\n".join([net.__str__() for net in self.nets])
 
 	def optimize(self,X):
-		self.train()
-		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
-			loss, return_loss = self.get_loss(X)
-		
-		optimizer_return = self.back_propagate(loss)
-
+		if len(self.train_queue) < self.gpu_prefetch:
+			return False, False
+		X, stream = self.train_queue.pop(0)
+		with torch.cuda.stream(stream):
+			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
+				loss, return_loss = self.get_loss(X)
+			
+			optimizer_return = self.back_propagate(loss)
+		self.streams.append(stream)
 
 		return return_loss, optimizer_return
+	
 	@torch.no_grad()
 	def test(self,X : tuple):
-		self.eval()
-		with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
-			loss, return_loss = self.get_loss(self.ensure(X))
-		return return_loss
+		if len(self.test_queue) < self.gpu_prefetch:
+			return False, False
+		X, stream = self.test_queue.pop(0)
+		with torch.cuda.stream(stream):
+			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
+				loss, return_loss = self.get_loss(X)
+		self.streams.append(stream)
+		return return_loss, True
 	
 	@abstractmethod
 	def get_loss(self,X : tuple):
@@ -177,10 +216,16 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		return X
 	def ensure(self, X):
 		#Helper function for ensure tensor device
-		if isinstance(X, tuple):
-			return tuple(map(self.ensure_tensor_device, X))
-		else:
-			return self.ensure_tensor_device(X)
+		stream = self.streams.pop(0)
+		with torch.cuda.stream(stream):
+			if isinstance(X, tuple):
+				X =  tuple(map(self.ensure_tensor_device, X))
+			else:
+				X = self.ensure_tensor_device(X)
+		
+		queue = self.train_queue if self.training else self.test_queue
+		queue.append((X,stream))
+		return X
 
 	#==========================================================================================
 	# Initializers

@@ -109,8 +109,8 @@ class QuaternionLoss(nn.Module):
         else:
             self.loss_fn = self.quaternion_relative_loss
 
-    def forward(self, q1_pred, q2_pred, q1_true, q2_true):
-        return self.loss_fn(q1_pred, q2_pred, q1_true, q2_true)
+    def forward(self, q_pred, q1_true, q2_true):
+        return self.loss_fn( q_pred, q1_true, q2_true)
 
     def euler_to_quaternion(self, euler: torch.Tensor, order: str = 'xyz') -> torch.Tensor:
         roll, pitch, yaw = euler[..., 0], euler[..., 1], euler[..., 2]

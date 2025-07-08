@@ -82,8 +82,11 @@ class SaneXYZPositionalEmbedding(nn.Module):
         self.max_positions = max_positions
         self.embed_dim = embed_dim
 
-        self.hash_linear_embed = nn.Linear(3, embed_dim//2)
-        self.hash_index_embed = ChunkwisePositionalEmbedding(max_positions=max_positions[0], embed_dim= embed_dim//input_dim, chunk_size=1)
+        self.hash_xyz = nn.Linear(3, embed_dim)
+        self.hash_index_global = ChunkwisePositionalEmbedding(max_positions=max_positions[0], embed_dim= 2*embed_dim//input_dim, chunk_size=1)
+        self.hash_layer = ChunkwisePositionalEmbedding(max_positions=16, embed_dim= 2*embed_dim//input_dim, chunk_size=1)
+        self.hash_index_layerwise = ChunkwisePositionalEmbedding(max_positions=700000, embed_dim= 2*embed_dim//input_dim, chunk_size=1)
+
         self.mlp_embed = nn.Embedding(max_positions[1], embed_dim)
     
     def forward(self, X):
@@ -93,15 +96,20 @@ class SaneXYZPositionalEmbedding(nn.Module):
 
         hash_xyz, hash_indices = hash[:,:,:3], hash[:,:,3:].long()
 
-
-        he_linear, mlpe = self.hash_linear_embed(hash_xyz), self.mlp_embed(mlp[...,0])
-        he_index = self.hash_index_embed(hash_indices)
+        l = hash_indices.shape[-1] // 3
         
 
-        he = torch.cat((he_linear , he_index), dim = -1)
-        pe = torch.cat((he,mlpe), dim=1)
+        hash_indices_global, hash_layers, hash_indices_layerwise = self.hash_index_global(hash_indices[...,:l]), self.hash_layer(hash_indices[...,l:2*l]), self.hash_index_layerwise(hash_indices[...,2*l:])
 
-        return x + pe
+
+        he_xyz, mlpe = self.hash_xyz(hash_xyz), self.mlp_embed(mlp[...,0])
+
+ 
+        he = he_xyz + hash_indices_global + hash_layers + hash_indices_layerwise
+
+        he = torch.cat((he, mlpe), dim=1)
+
+        return x + he
 
 class SaneXYZPositionalEmbedding_Linear(nn.Module):
     def __init__(self, max_positions = [25], embed_dim = 128):

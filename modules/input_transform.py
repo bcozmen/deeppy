@@ -9,7 +9,10 @@ class SqueezeLastDimention(nn.Module):
 class SqueezeLastDimention2Inputs(nn.Module):
     def __init__(self):
         super().__init__()
-    def forward(self, z1,z2):
+    def forward(self, X):
+        z1,z2 = X
+        #print(z1.shape)
+        #print(z2.shape)
         z1 = z1.view(z1.shape[:-2] + (-1,))
         z2 = z2.view(z2.shape[:-2] + (-1,))
         return torch.cat([z1, z2], dim=-1)

@@ -21,9 +21,9 @@ class Sane(BaseModel):
 		input_dim= 201, latent_dim = 128, projection_dim = 30, pos_token_size = 10,
 		embed_dim=1024, num_heads=4, num_layers=4,  dropout = 0.1, context_size=50, bias = True, 
 		gamma = [0.05,0.05], ntx_temp = 0.1,
-		device = None, amp = False,torch_compile = False):
+		device = None, amp = False,torch_compile = False, gpu_prefetch = 1):
 
-		super().__init__(device= device, amp=amp, torch_compile=torch_compile)
+		super().__init__(device= device, amp=amp, torch_compile=torch_compile, gpu_prefetch = gpu_prefetch)
 
 		#Init Loss function
 		self.ntx_temp = ntx_temp
@@ -83,6 +83,8 @@ class Sane(BaseModel):
 		zp = self.project(z[:,:-self.pos_token_size, :])
 		y = self.autoencoder.decode((z,p))
 		return z, y, zp
+	
+
 
 	def get_loss(self,X):
 		x_1, p_1,m_1,r_1, x_2, p_2,m_2,r_2 = X
@@ -91,7 +93,7 @@ class Sane(BaseModel):
 		z_1, y_1, zp_1 = self((x_1, p_1))
 		z_2, y_2, zp_2 = self((x_2, p_2))
 
-		q_pred = self.classify((z_1[:,-self.pos_token_size,:], z_2[:,-self.pos_token_size,:]))
+		q_pred = self.classify((z_1[:,-self.pos_token_size:,:], z_2[:,-self.pos_token_size:,:]))
 		
 		
 		#Compute reconstruction loss
@@ -186,7 +188,7 @@ class Sane(BaseModel):
 			"blocks":[SqueezeLastDimention],
 		}
 		arch_params2 = {
-			"layers":[self.latent_dim * (self.context_size - 1), self.projection_dim, self.projection_dim//2],
+			"layers":[self.latent_dim * (self.context_size - self.pos_token_size), self.projection_dim, self.projection_dim//2],
 			"blocks":[nn.Linear, nn.LayerNorm, nn.ReLU],
 			"block_args":[{"bias" : self.bias}],
 			"out_act": nn.ReLU,
