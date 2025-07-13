@@ -139,17 +139,13 @@ class Optimizer():
 				state = self.optimizer.state[p]
 				
 				if 'exp_avg_sq' in state:
-					v_t = state['exp_avg_sq']
-					# Element-wise effective lr
-					eff_lr_tensor = self.optimizer_args["lr"] / (v_t.sqrt() + group['eps'])
 					# Log the average effective lr
-					eff_lr_mean = eff_lr_tensor.mean().item()
-					vs.append(eff_lr_mean)
+					v_t = state['exp_avg_sq'].norm(2).item()
+					vs.append(v_t)
 				if 'exp_avg' in state:
 					m_t = state['exp_avg']
 					momentum_norm = m_t.norm(2).item()
 					ms.append(momentum_norm)
-				
 				if p.grad is not None:
 					param_norm = p.grad.detach().norm(2).item()
 					grad_norms.append(param_norm)

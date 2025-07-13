@@ -75,6 +75,20 @@ class UniquePerBatchSampler(Sampler):
 
     def __len__(self):
         return (self.len_per_epoch * self.num_repeats) 
+    
+class UniquePerBatchDataset(Dataset):
+    def __init__(self, dataset, num_repeats):
+        self.dataset = dataset
+        self.num_repeats = num_repeats
+        self.indices = torch.stack([
+            torch.randperm(len(self.dataset)) for _ in range(self.num_repeats)
+        ]).flatten()
+
+    def __getitem__(self,idx):
+        return self.dataset[self.indices[idx]]
+        
+    def __len__(self):
+        return len(self.indices)
 
 class DatasetLoader(DatasetBase):
     def __init__(self, data, test_data = None, splits = None, file_name = None, repeat = 1,
@@ -113,8 +127,9 @@ class DatasetLoader(DatasetBase):
         
         if len(self.test_dataset) > 0:
             if self.repeat > 1:
-                self.dataloader_args['sampler'] = UniquePerBatchSampler(len(self.test_dataset), self.repeat, self.batch_size)
-            self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, **self.dataloader_args)
+                test_batch_size = min(len(self.test_dataset),self.batch_size)
+                self.dataloader_args['sampler'] = UniquePerBatchSampler(len(self.test_dataset), self.repeat, test_batch_size)
+            self.test_loader = DataLoader(self.test_dataset, batch_size=test_batch_size, **self.dataloader_args)
         if len(self.valid_dataset) > 0:
             if self.repeat > 1:
                 self.dataloader_args['sampler'] = UniquePerBatchSampler(len(self.valid_dataset), self.repeat, self.batch_size)

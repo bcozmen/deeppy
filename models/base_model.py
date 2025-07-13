@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod,ABCMeta
 from deeppy.utils import print_args
 from deeppy.modules.network import Network
 from torch.cuda.amp import GradScaler
+from torch.utils.tensorboard import SummaryWriter
+
 import queue
 
 class BaseClassMeta(type):
@@ -36,30 +38,6 @@ class BaseClassMeta(type):
 		return obj
 
 
-class Stream():
-	def __init__(self):
-		self.current = torch.cuda.stream()
-		self.current_loaded = False
-		self.next = torch.cuda.stream()
-		self.next_loaded = False
-	def load_stream(self):
-		if not self.current_loaded:
-			self.current_loaded = True
-			return self.current
-		elif not self.next_loaded:
-			self.next_loaded = True
-			return self.next
-		else:
-			return False
-	def wait_stream(self):
-		temp = self.current
-
-		self.current = self.next
-		self.current_loaded = self.next_loaded 
-
-		self.next = temp
-		self.next_loaded = False
-		return self.next
 		
 
 class CombinedMeta(BaseClassMeta, ABCMeta):
@@ -132,6 +110,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.criterion = criterion
 		self.training = True
 		self.gpu_prefetch = gpu_prefetch
+		self.writer = SummaryWriter(log_dir="logs")
 		
 		self.nets = []
 		self.params = []
@@ -151,6 +130,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def after_init(self):
 		self.train()
 		self.set_optimizers()
+		self.init_log_names()
 	def __call__(self, X):
 		return self.forward(X)
 
@@ -163,10 +143,11 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		X, stream = self.train_queue.pop(0)
 		with torch.cuda.stream(stream):
 			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
-				loss, return_loss = self.get_loss(X)
+				loss, losses,metrics = self.get_loss(X)
 			
 			optimizer_return = self.back_propagate(loss)
 		self.streams.append(stream)
+		self.log(losses,metrics)
 
 		return return_loss, optimizer_return
 	
@@ -191,6 +172,9 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	def forward(self,X : tuple):
 		pass
 
+	@abstractmethod
+	def init_log_names(self):
+		pass
 	#==========================================================================================
 	# States
 
@@ -229,6 +213,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 
 	#==========================================================================================
 	# Initializers
+	
 
 	def init_objects(self):
 		self.criterion = self.objects[0]
@@ -304,6 +289,16 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 			net.load_states(net_dicts)
 
 	#===========================================================================================
+
+	def log(self, losses, metrics):
+		epoch = self.optimizer.optimizer_steps_counter		
+		tag_prefix = "Loss/Train/" if self.training else "Loss/Test/"
+		for loss, name in zip(losses,self.losses_names):
+			self.writer.add_scalar(tag_prefix + name, loss.item(), epoch)
+		
+		tag_prefix = "Metric/Train/" if self.training else "Metric/Test/"
+		for loss, name in zip(metrics,self.metrics_names):
+			self.writer.add_scalar(tag_prefix + name, loss.item(), epoch)
 
 	def param_norm(self):
 		total_norms = []

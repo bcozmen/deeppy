@@ -6,10 +6,16 @@ import glob
 import numpy as np
 import safetensors.torch as sf 
 import pickle
+from multiprocessing import Manager, Pool
 
 
+_pool = None
 
-
+def get_pool():
+    global _pool
+    if _pool is None:
+        _pool = Pool(processes=24)
+    return _pool
 
 class GridEncoder():
     def __init__(self, levels = 16, base_resolution = 16,  align_corners = True, hashmap_size = 2**19):
@@ -120,7 +126,7 @@ class GridEncoder():
 
 class IngpData(Dataset):
     def __init__(self, data_path, config, window_size = None, token_size = None, max_layer_width = 64, device = None, train = True, 
-                 mlp_token_size = 53, pos_token_size = 10, noise_augment = 0, normalize = False):
+                 mlp_token_size = 53, pos_token_size = 10, data_buffer_size = 5,  permutation_augment = True, normalize = False):
         self.data_path = data_path
         self.config = config
 
@@ -128,8 +134,10 @@ class IngpData(Dataset):
         num_levels = self.config['hash_encoding']["num_levels"]  # Number of levels in the grid encoder
         self.grid_encoder = GridEncoder(base_resolution=base_resolution, levels=num_levels, hashmap_size= 2**19)
 
+        #self.pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        self.data_buffer_size = data_buffer_size
         self.normalize = normalize
-        self.noise_augment = noise_augment
+        self.permutation_augment = permutation_augment
         self.window_size = window_size
         self.pos_token_size = pos_token_size
         self.mlp_token_size = mlp_token_size
@@ -152,23 +160,49 @@ class IngpData(Dataset):
 
     def __len__(self):
         return len(self.all_objects_2d)
-    
-    def __getitem__multiple(self,idx):
-        if len(self.data_buffer[idx]) == 0:
-            pass
-        else:
-            t1, p1, m1, r1, t2, p2, m2, r2 = self.data_buffer[idx]
-        return t1, p1, m1, r1, t2, p2, m2, r2
-    
+
+    def load_object_paths(self): 
+        self.objects = glob.glob(self.data_path + "/*")
+        self.all_objects_2d = []
+        self.all_objects = []
+
+        try:
+            with open('object_lists.pkl', 'rb') as f:
+                self.all_objects, self.all_objects_2d = pickle.load(f)
+            
+        except:
+            #For all objects
+            for o in self.objects:
+                #Get paths for (up to) 6 different views
+                obj_paths = glob.glob(o + "/**/hash.bin",  recursive=True)
+                #If no augmentation, skip
+                if len(obj_paths) <= 1:
+                    continue
+                #From the folder name calculate the transform
+                transforms =  [[float(m) for m in k.split("/")[-3].split("_")[1:]] for k in obj_paths]
+                transforms = torch.deg2rad(torch.tensor(transforms, dtype=torch.float32))  # Convert degrees to radians
+                
+                obj_paths = [o.replace("hash.bin","") for o in obj_paths]
+                this_object = list(zip(*[obj_paths, transforms]))
+                
+                self.all_objects.extend(this_object)
+                self.all_objects_2d.append(this_object)
+
+        self.data_buffer = [[] for _ in self.all_objects_2d]
+        
+        with open('object_lists.pkl', 'wb') as f:
+            pickle.dump((self.all_objects, self.all_objects_2d), f)  # Store as a tuple
+   
+
     def __getitem__(self, idx):
         idx = idx
         #Random index
         #Sample (window_size - hash_chunk_size )points in 3D space (512,3)
         #points = torch.rand((self.hash_chunk_size * 4, 3)
-        points = torch.randn(self.hash_chunk_size * 4, 3) * 0.2 + torch.tensor([0.5,0.5,0.5])
+        points = torch.rand(self.hash_chunk_size, 3)
         points = points.clamp(0.0,1.0)                
-        points1 = points[torch.randperm(len(points))[:self.hash_chunk_size]]
-        points2 = points[torch.randperm(len(points))[:self.hash_chunk_size]]
+        #points1 = points[torch.randperm(len(points))[:self.hash_chunk_size]]
+        #points2 = points[torch.randperm(len(points))[:self.hash_chunk_size]]
         
         
         #Get 2 random views of the object
@@ -178,17 +212,12 @@ class IngpData(Dataset):
         obj1_path, obj_1_transform = object_parent_path[idx_child[0]]
         obj2_path, obj_2_transform = object_parent_path[idx_child[1]] 
 
-        [t1,p1,m1], r1 = self.load_weights(obj1_path, points1), obj_1_transform
-        (t2,p2,m2), r2 = self.load_weights(obj2_path, points2), obj_2_transform
+        [t1,p1,m1], r1 = self.load_weights(obj1_path, points), obj_1_transform
+        (t2,p2,m2), r2 = self.load_weights(obj2_path, points), obj_2_transform
         
+        r1 += torch.randn_like(r1) * torch.deg2rad(torch.tensor(2.5))
         r2 += torch.randn_like(r2) * torch.deg2rad(torch.tensor(2.5))
-        return t1, p1, m1, r1, t2, p2, m2, r2
-    
-    def __getitem__rot(self,idx):
-        #Get 2 random views of the object
-        object_parent_path = self.all_objects_2d[idx]
-        idx_child = torch.randperm(len(object_parent_path))[:2]
-
+        return t1.numpy(), p1.numpy(), m1.numpy(), r1.numpy(), t2.numpy(), p2.numpy(), m2.numpy(), r2.numpy()
         
     def load_weights(self, file_path, points):
         file_path = file_path.replace("final.pth", "")
@@ -261,12 +290,7 @@ class IngpData(Dataset):
             mlp_tokens = mlp_tokens.view(-1, self.token_size)
 
         
-        if self.noise_augment > 0:
-            hash_tokens = hash_tokens * (1.0 + self.noise_augment * torch.randn_like(hash_tokens))
-            mlp_tokens = mlp_tokens * (1.0 + self.noise_augment * torch.randn_like(mlp_tokens))
 
-        
-            
            
 
         rot_t = torch.zeros((self.pos_token_size, self.token_size))
@@ -355,37 +379,7 @@ class IngpData(Dataset):
             new_weights.append(W_new)
         
         return new_weights
-    def load_object_paths(self): 
-        self.objects = glob.glob(self.data_path + "/*")
-        self.all_objects_2d = []
-        self.all_objects = []
 
-        try:
-            with open('object_lists.pkl', 'rb') as f:
-                self.all_objects, self.all_objects_2d = pickle.load(f)
-            
-        except:
-            #For all objects
-            for o in self.objects:
-                #Get paths for (up to) 6 different views
-                obj_paths = glob.glob(o + "/**/hash.bin",  recursive=True)
-                #If no augmentation, skip
-                if len(obj_paths) <= 1:
-                    continue
-                #From the folder name calculate the transform
-                transforms =  [[float(m) for m in k.split("/")[-3].split("_")[1:]] for k in obj_paths]
-                transforms = torch.deg2rad(torch.tensor(transforms, dtype=torch.float32))  # Convert degrees to radians
-                
-                obj_paths = [o.replace("hash.bin","") for o in obj_paths]
-                this_object = list(zip(*[obj_paths, transforms]))
-                
-                self.all_objects.extend(this_object)
-                self.all_objects_2d.append(this_object)
-
-        self.data_buffer = [[ ] for row in self.all_objects_2d]
-        
-        with open('object_lists.pkl', 'wb') as f:
-            pickle.dump((self.all_objects, self.all_objects_2d), f)  # Store as a tuple
         
 
         
