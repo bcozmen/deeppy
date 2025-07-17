@@ -22,18 +22,38 @@ class concatInputsWithPosition(nn.Module):
 
 		self.unique_pos = nn.Embedding(sequence_length, embed_dim)
 		self.layer_pos = nn.Embedding(num_inputs, embed_dim)
+		self.rot_token = nn.Embedding(1,embed_dim)
 
 		unique_pos_indices = torch.arange(sequence_length).repeat(num_inputs)
-		layer_pos_indices = torch.tensor([i for i in range(num_inputs) for _ in range(sequence_length) ])
+		layer_pos_indices = torch.arange(num_inputs).repeat_interleave(sequence_length)
+
 
 		self.register_buffer('unique_pos_indices', unique_pos_indices)
 		self.register_buffer('layer_pos_indices', layer_pos_indices)
+		self._init_weights()
 
-
+	def _init_weights(self, init_range=0.02):
+		nn.init.normal_(self.unique_pos.weight, mean=0.0, std=init_range)
+		nn.init.normal_(self.layer_pos.weight, mean=0.0, std=init_range)
+		nn.init.normal_(self.rot_token.weight, mean=0.0, std=init_range)
 	def forward(self, X):
 		p1,p2 = self.unique_pos(self.unique_pos_indices), self.layer_pos(self.layer_pos_indices)
 		X = torch.cat(X, dim=self.dim)
-		return X + p1 + p2
+		X = X + p1 + p2
+
+		batch_shape = X.shape[:-2]                        # e.g. (batch_size,)
+		rot_emb = self.rot_token.weight                       # (1, embed_dim)
+		rot_emb = rot_emb.expand(*batch_shape, 1, self.embed_dim)
+
+		output = torch.cat([rot_emb, X], dim=-2)   
+		return output
+
+class getFirstToken(nn.Module):
+	def __init__(self):
+		super().__init__()
+	def forward(self, X):
+		X = X[..., 0, :]
+		return X
 
 class AttentionPooling(nn.Module):
 	def __init__(self, latent_dim):
@@ -50,7 +70,8 @@ class AttentionPooling(nn.Module):
 		return pooled
 
 class SaneRotationalHead(nn.Module):
-	def __init(self, latent_dim, proj_dim, out_dim):
+	def __init__(self, latent_dim= 1, proj_dim=1, out_dim=1):
+		super().__init__()
 		self.proj = nn.Sequential(
 			nn.Linear(latent_dim*2, proj_dim),
 			nn.ReLU(),
@@ -60,7 +81,7 @@ class SaneRotationalHead(nn.Module):
 	def _init_weights(self):
 		for m in self.proj:
 			if isinstance(m, nn.Linear):
-				nn.init.xavier_uniform_(m.weight)
+				nn.init.kaiming_uniform_(m.weight)
 				if m.bias is not None:
 					nn.init.zeros_(m.bias)
 	def forward(self, X):
@@ -83,7 +104,7 @@ class FullAttentionPooling(nn.Module):
 		# Initialize weights of linear layers (Xavier uniform)
 		for m in self.proj:
 			if isinstance(m, nn.Linear):
-				nn.init.xavier_uniform_(m.weight)
+				nn.init.kaiming_uniform_(m.weight)
 				if m.bias is not None:
 					nn.init.zeros_(m.bias)
 
@@ -109,7 +130,6 @@ class FullAttentionPooling(nn.Module):
 class Sane(BaseModel):
 	#kwargs = device, criterion
 	dependencies = [Network]
-	optimize_return_labels = ["Loss", "Recon Loss", "NTX Loss", "Rot Loss",  "Latent Norm Loss", "Z distance"]	
 
 	def __init__(self, optimizer_params, max_positions, 
 		input_dim= 201, latent_dim = 128, projection_dim = 30, pos_token_size = 10,
@@ -150,7 +170,7 @@ class Sane(BaseModel):
 		#Create Networks
 		self.autoencoder, self.autoencoder_params = self.build_autoencoder()
 		self.project , self.project_params = self.build_projection_head()
-		self.classify, self.classify_params = self.build_classifier()
+		self.classify, self.classify_params = self.build_classifier_encoder()
 		self.nets = [self.autoencoder, self.project, self.classify]
 		
 		
@@ -164,8 +184,8 @@ class Sane(BaseModel):
 		self.recon_crit, self.ntx_crit, self.rot_crit = self.objects
 
 	def init_log_names(self):
-		self.losses_names = ["Recon", "NTX", "Rotation", "Z Norm"]
-		self.metrics_names = [""]
+		self.losses_names = ["Total", "Recon", "NTX", "Rotation", "Z Norm"]
+		self.metrics_names = ["Z distance mean", "Z distance std", "Z Norm Std"]
 
 	def encode(self,X):
 		return self.autoencoder.encode(X)
@@ -203,8 +223,7 @@ class Sane(BaseModel):
 
 		
 
-		q_pred = self.classify((z_1[:,-1,:], z_2[:,-1,:]))
-		
+		q_pred = self.classify((z_1[:,-self.pos_token_size :,:], z_2[:,-self.pos_token_size:,:]))
 		
 		#Compute reconstruction loss
 		x = torch.cat([x_1, x_2], dim=0)
@@ -220,16 +239,15 @@ class Sane(BaseModel):
 		#Compute NTX loss
 		ntx_loss = self.ntx_crit(zp_1, zp_2)
 		z_l2_loss = (z_1.pow(2).mean() +  z_2.pow(2).mean()) / 2
-
 		#Compute final loss
-		z_distance = (z_1[:,:-self.pos_token_size, :] - z_2[:,:-self.pos_token_size, :]).pow(2).mean()
+		z_distance = (z_1[:,:-self.pos_token_size, :] - z_2[:,:-self.pos_token_size, :]).pow(2)
 		#loss = (self.gamma[0] * (recon_loss + synth_recon_loss) / 2)  + (self.gamma[1] * ntx_loss) + (self.gamma[2] * rot_loss) + (self.gamma[3] * z_l2_loss)
 		loss = (self.gamma[0] * recon_loss )  + (self.gamma[1] * ntx_loss) + (self.gamma[2] * rot_loss) + (self.gamma[3] * z_l2_loss)
 
-		losses =  (loss.item(), recon_loss.item(), ntx_loss.item(), rot_loss.item(), z_l2_loss.item())
-		metrics = (z_distance.item())
+		self.writer_losses.append([loss.item(), recon_loss.item(), ntx_loss.item(), rot_loss.item(), z_l2_loss.item()])
+		self.writer_metrics.append([z_distance.mean().item(), z_distance.std().item()])
 
-		return loss, (loss.item(), recon_loss.item(), ntx_loss.item(), rot_loss.item(), z_l2_loss.item(), z_distance.item())
+		return loss
 
 	def back_propagate(self,loss):
 		return self.optimizer.step(loss)
@@ -363,7 +381,7 @@ class Sane(BaseModel):
 		}
 
 		arch_params = {
-			"blocks":[concatInputsWithPosition, nn.TransformerEncoderLayer, FullAttentionPooling],
+			"blocks":[concatInputsWithPosition, nn.TransformerEncoderLayer, getFirstToken, nn.Linear],
 			"block_args" : [
 				{
 					"dim":1,
@@ -371,10 +389,10 @@ class Sane(BaseModel):
 					"embed_dim" : self.latent_dim,
 				},
 				encoder_params,
+				{},
 				{
-					"latent_dim" : self.latent_dim,
-					"proj_dim" : self.projection_dim,
-					"out_dim" : 4
+					"in_features" : self.latent_dim,
+					"out_features" : 4,
 				},
 			]
 		}
@@ -392,7 +410,7 @@ class Sane(BaseModel):
 				   {
 					"latent_dim" : self.latent_dim,
 					"proj_dim" : self.projection_dim,
-					"output_dim" : 4
+					"out_dim" : 4
 					}
 				   ]
 		}
@@ -403,18 +421,22 @@ class Sane(BaseModel):
 
 		return Network(**network_params).to(self.device), network_params
 	def configure_optimizer(self):
-		params = itertools.chain(*[k.named_parameters() for k in self.nets])
-		param_dict = {pn: p for pn, p in params}
-		param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+		decay_params = []
+		nodecay_params = []
 
-		decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-		nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+		for net in self.nets:
+			for param in net.model.parameters():
+				if not param.requires_grad:
+					continue
+				if param.dim() >= 2:
+					decay_params.append(param)
+				else:
+					nodecay_params.append(param)
 
 		optim_groups = [
 			{"params": decay_params, "weight_decay": self.optimizer_params["optimizer_args"]["weight_decay"]},
 			{"params": nodecay_params, "weight_decay": 0.0},
 		]
-
 
 		del self.optimizer_params["optimizer_args"]["weight_decay"]
 		return Optimizer(optim_groups, **self.optimizer_params)

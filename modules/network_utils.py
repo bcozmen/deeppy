@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.optim as optim
 
 from torch.cuda.amp import GradScaler
+from torch.utils.tensorboard import SummaryWriter
+
 
 from deeppy.utils import print_args
 #Should be more generalized with arguments
@@ -54,9 +56,9 @@ class Optimizer():
 		self.clipper = clipper
 		self.clipper_params = clipper_params
 		self._step_counter = 0
-		self.optimizer_steps_counter = 0
+		self._optimizer_steps_counter = 0
 		
-		
+		self.writer = SummaryWriter(log_dir="logs")
 
 		#Initialize with neutral values and then later in in base model.set_optimizerrs
 		self.optimizer.zero_grad(set_to_none=True)
@@ -68,41 +70,45 @@ class Optimizer():
 			self.scheduler = Scheduler(self.optimizer, **scheduler_params) 
 	
 	def step(self, loss):
+		
+
 		# Calculate loss wrt accumulation
 		loss = loss / self.gradient_accumulation_steps
 		# Compute gradients
 		self.scaler.scale(loss).backward()
-
-		# If gradient accumulation steps is reached, perform optimization step
-		if (self._step_counter + 1) % self.gradient_accumulation_steps == 0:
-			# Gradient clipping
-			self.scaler.unscale_(self.optimizer) 
-			metrics = self.log_metrics()
-
-			if self.clipper is not None:
-				if self.nn_model:
-					grad_norm =self.clipper(self.model.parameters(), **self.clipper_params)
-				else:
-					params = [p for group in self.model for p in group["params"]]
-					grad_norm = self.clipper(params, **self.clipper_params)
-				
-			
-			# Optimizer step
-			self.scaler.step(self.optimizer)
-			
-			self.scaler.update()
-			self.optimizer.zero_grad(set_to_none=True)
-
-			# Scheduler step (if auto-stepping)
-			if self.scheduler is not None and self.scheduler.auto_step:
-				self.scheduler.step()
-			
-			self.optimizer_steps_counter += 1
-			self._step_counter += 1
-			return self.optimizer_steps_counter, metrics
-		else:
-			self._step_counter += 1
+		self._step_counter += 1
+		
+		# If gradient accumulation steps is not reached, return False
+		if (self._step_counter) % self.gradient_accumulation_steps != 0:
 			return False
+			
+		#If using AMP unscale
+		self.scaler.unscale_(self.optimizer) 
+		
+		#Log before clipping
+		self.log()
+
+		#Clip
+		if self.clipper is not None:
+			if self.nn_model:
+				self.clipper(self.model.parameters(), **self.clipper_params)
+			else:
+				params = [p for group in self.model for p in group["params"]]
+				self.clipper(params, **self.clipper_params)
+			
+		# Optimizer step
+		self.scaler.step(self.optimizer)
+		self.scaler.update()
+		self.optimizer.zero_grad(set_to_none=True)
+
+		# Scheduler step (if auto-stepping)
+		if self.scheduler is not None and self.scheduler.auto_step:
+			self.scheduler.step()
+		
+		self._optimizer_steps_counter += 1
+		
+		return True
+
 
 	def save_states(self):
 		if self.scheduler is None:
@@ -115,7 +121,7 @@ class Optimizer():
 			"clipper_params" : self.clipper_params,
 			"scheduler" : sch,
 			"scaler" : self.scaler,
-			"optimizer_steps_counter" : self.optimizer_steps_counter,
+			"_optimizer_steps_counter" : self._optimizer_steps_counter,
 			"_step_counter" : self._step_counter,}
 
 	def load_states(self, dic):
@@ -124,15 +130,15 @@ class Optimizer():
 
 		self.optimizer.load_state_dict(dic["optimizer"])
 		self.optimizer.zero_grad(set_to_none=True)
-		self.optimizer_steps_counter = dic["optimizer_steps_counter"]
+		self._optimizer_steps_counter = dic["_optimizer_steps_counter"]
 		self._step_counter = dic["_step_counter"]
 		self.scaler = dic["scaler"]
 		if self.scheduler is not None:
 			self.scheduler.scheduler.load_state_dict(dic["scheduler"])
 
-	def log_metrics(self):
+	def log(self):
 		# Calculate gradient norm
-		grad_norms, vs, ms = [], [], []
+		param_norms, grad_norms, vs, ms = [], [], [], []
 		for group in self.optimizer.param_groups:
 			for p in group["params"]:
 				
@@ -147,10 +153,22 @@ class Optimizer():
 					momentum_norm = m_t.norm(2).item()
 					ms.append(momentum_norm)
 				if p.grad is not None:
-					param_norm = p.grad.detach().norm(2).item()
-					grad_norms.append(param_norm)
+					param_norm, grad_norm = p.data.detach().norm(2).item(), p.grad.detach().norm(2).item()
+					
+					param_norms.append(param_norm)
+					grad_norms.append(grad_norm)
 		
-		return (grad_norms,vs,ms)
+		tag_prefix = "Optimizer/"
+
+		if len(param_norms) > 0:
+			self.writer.add_histogram(tag_prefix + "Param_Norms", torch.tensor(param_norms), self._optimizer_steps_counter )
+		if len(grad_norms) > 0:
+			self.writer.add_histogram(tag_prefix + "Gradient_Norms", torch.tensor(grad_norms), self._optimizer_steps_counter )
+		if len(ms) > 0:
+			self.writer.add_histogram(tag_prefix + "First_Moment_Norms", torch.tensor(ms) , self._optimizer_steps_counter)
+		if len(vs) > 0:
+			self.writer.add_histogram(tag_prefix + "Second_Moment_Norms", torch.tensor(vs) , self._optimizer_steps_counter)
+		self.writer.add_scalar(tag_prefix + "Lr", self.scheduler.scheduler.get_last_lr()[0], self._optimizer_steps_counter)
 
 
 

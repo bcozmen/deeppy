@@ -11,286 +11,17 @@ import pickle
 from collections import deque, namedtuple
 
 import matplotlib.pyplot as plt
-import matplotlib
 import matplotlib.animation as animation
-from IPython import display
 from matplotlib.animation import FuncAnimation
-from IPython.display import HTML
 import numpy as np
-
-
-
-
-    
-class Metric():
-    def __init__(self,train_labels,test_labels, env_data=False):
-        #Labels list of strings for plot labels
-        self.env_data = env_data
-        self.plot_lr = False
-
-        self.is_ipython = 'inline' in matplotlib.get_backend()
-        plt.ion()
-
-        self.train_labels = train_labels
-        self.test_labels = test_labels
-        self.train_data,self.test_data = [], []
-        self.train_data_ix,self.test_data_ix = [], []
-
-        self.lrs = []
-        self.optimizer_metrics = []
-        self.param_magnitutes = []
-
-        self.reward, self.duration = 0,0
-        self.duration_data, self.reward_data = [],[]
-        
-        
-
-        self.colors = [
-            'tab:blue', 'tab:orange', 'tab:green', 'tab:red',
-            'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray',
-            'tab:olive', 'tab:cyan', 'tab:blueviolet', 'tab:gold',
-            'tab:turquoise', 'tab:coral', 'tab:limegreen', 'tab:indigo'
-        ]
-
-    def env_reset(self):
-        self.reward, self.duration = 0,0
-
-    def env_done(self):
-        self.duration_data.append(self.duration)
-        self.reward_data.append(self.reward)
-        self.env_reset()
-    def env_step(self,reward, done):
-        self.duration +=1
-        self.reward += reward
-        if done:
-            self.env_done()
-
-
-
-    def plot_old(self, log= False, show_result = False, save = None):
-        if self.env_data:
-            data = [[self.reward_data], [self.duration_data]]
-            labels = [["Reward"], ["Duration"]]
-        else:
-            data = [ [self.train_data, []]]
-            labels = [[["Train " +lbl for lbl in self.train_labels], ["Test " +lbl for lbl in self.test_labels]]]
-        if self.plot_lr:
-            data += [self.lrs]
-            labels += ["Learning Rate"]
-        self.plot_data(data,labels,log=log,show_result=show_result,save=save)
-
-    def plot(self, log = True, show_result = False, save = None, 
-              show_lrs = False, show_magnitutes = True,
-             window_size = 100, test_steps = 25, text = ""):
-        """
-        Plot the training and test data.
-        Parameters
-        ----------
-        log : bool, optional
-            If True, plot the data on a logarithmic scale. The default is True.
-        show_result : bool, optional
-            If True, display the plot in the notebook. The default is False.
-        save : str, optional
-            If provided, save the plot to the specified file path. The default is None.
-        window_size : int, optional
-            The size of the window for smoothing the data. If None, no smoothing is applied.
-        """
-        if window_size is None or test_steps is None:
-            test_window_size = None
-        else:
-            test_window_size = window_size // test_steps 
-        num_rows = 1 + int(show_lrs) + (1*int(show_magnitutes))
-        fig, axes = plt.subplots(num_rows, figsize=(12, 10 * num_rows))
-
-        if num_rows == 1:
-            axes = [axes]
-        
-        train_data = list(zip(*self.train_data))
-        test_data =  list(zip(*self.test_data))
-
-        ax = axes[0]
-        print(ax)
-        ax.set_xlabel('Steps')
-        ax.clear()
-
-        y_label = "Loss"
-        if log:
-            y_label = "Log10 Loss"
-        ax.set_ylabel(y_label)
-        ax.grid(True)
-        
-        for data,label,color in zip(train_data, self.train_labels,self.colors):
-            ixes = self.train_data_ix
-            if window_size is not None:
-                data = self.uniform_smooth(data, window_size=window_size)
-                ixes = ixes[window_size//2:-(window_size//2-1)]
-            if log:
-                data = np.log10(data)
-    
-            ax.plot(ixes,data, '-', c=color, label = "Train " +label , alpha=0.9, linewidth = 1.5)
-                
-        
-        for data,label,color in zip(test_data, self.train_labels,self.colors):
-            #if window_size is not None:
-            #    data = self.gaussian_smooth(data, window_size=window_size)
-            data_ix = self.test_data_ix
-            if test_window_size is not None and test_window_size > 0:
-                data = self.uniform_smooth(data, window_size=test_window_size)
-                data_ix = data_ix[test_window_size//2:-(test_window_size//2-1)]
-            
-            if log:
-                data = np.log10(data)
-
-            ax.plot(data_ix,data,'--', c = color, alpha=0.9)
-
-        ax.set_title(text)
-        ax.legend()
-
-        if show_lrs:
-            ax = axes[1]
-            
-            ax.plot(self.train_data_ix,np.log10(self.lrs), label = "Learning Rate")
-            ax.set_ylabel("Log10 Learning Rate")
-            ax.set_xlabel("Epoch")
-            ax.legend()
-            ax.grid(True) 
-
-        if show_magnitutes:
-            param_norms = torch.norm(torch.tensor(self.param_magnitutes), dim = 1)
-            
-            optimizer_metrics = torch.tensor(list(zip(*self.optimizer_metrics[10:])))
-            grad_norms =  torch.norm(optimizer_metrics[0], dim = 1)
-            #v_lrs = torch.mean(optimizer_metrics[1], dim = 1)
-            #momentum_norms = torch.meanoptimizer_metrics[2],dim=1)
-
-            ax = axes[2]
-            ax.plot(self.train_data_ix[10:],np.log10(grad_norms), c = "tab:blue")
-            ax.set_ylabel("Grad Magnitutes", c = "tab:blue")
-            ax.set_xlabel("Epoch")
-
-            ax_twin = ax.twinx()
-            ax_twin.plot(self.train_data_ix,param_norms, c = "tab:orange")
-            ax_twin.set_ylabel("Param Magnitutes Change (%)", c = "tab:orange")
-            ax.grid(True)
-
-            """
-            ax = axes[3]
-            for ix in range(momentum_norms.shape[0]):
-                ax.scatter(ix * np.ones_like(momentum_norms[0]), np.log10(momentum_norms[ix]), s= 10)
-            ax.set_ylabel("Momentum Norms (Log10)")
-            ax.set_xlabel("Epoch")
-            ax.grid(True)
-
-            ax = axes[4]
-            for ix in range(v_lrs.shape[0]):
-                ax.scatter(ix * np.ones_like(v_lrs[0]), np.log10(v_lrs[ix]), s= 10)
-            ax.set_ylabel("Adaptive Learning Rates (Log10)")
-            ax.set_xlabel("Epoch")
-            ax.grid(True)
-            """
-        plt.xlabel('Steps')
-        
-        if save is not None:
-            plt.savefig(save)
-        plt.pause(0.001)  # pause a bit so that plots are updated
-
-        if self.is_ipython:
-            if not show_result:
-                display.display(plt.gcf())
-                display.clear_output(wait=True)
-            else:
-                display.display(plt.gcf())
-    def plot_ax(self,ax,data, label, log = False):
-        ax.set_xlabel('Episode')
-        ax.clear()
-        #ax.set_ylabel(name)
-        ax.grid(True)
-
-        
-        is_lr = (label == "Learning Rate")
-
-        if is_lr:
-            data = np.log10([data])
-            label = np.asarray([label])
-
-        for d,l in zip(data,label):
-            d = np.asarray(d)
-            if log and not is_lr:
-                d = np.log10(d)
-            ax.plot(d,label=l)
-        ax.legend()
-
-    def plot_data(self,datas,labels, log=False,show_result=False, save = None):
-        num_rows = len(labels)
-        fig,axes = plt.subplots(num_rows, figsize = (10,6*num_rows))
-        if num_rows == 1:
-            axes = [axes]
-
-
-        plt.xlabel('Episode')
-
-
-        for data,label,ax in zip(datas,labels,axes):
-            self.plot_ax(ax,data,label, log = log)
-        
-        if save is not None:
-            plt.savefig(save)
-        plt.pause(0.001)  # pause a bit so that plots are updated
-
-
-        if self.is_ipython:
-            if not show_result:
-                display.display(plt.gcf())
-                display.clear_output(wait=True)
-            else:
-                display.display(plt.gcf())
-
-    def gaussian_smooth(self, data, window_size=5):
-        """
-        Apply Gaussian smoothing to the data.
-        """
-        if len(data) < window_size:
-            return data
-        kernel = np.exp(-np.linspace(-1, 1, window_size)**2 / 0.5**2)
-        kernel /= kernel.sum()
-        smoothed_data = np.convolve(data, kernel, mode='valid')
-        return smoothed_data
-    
-    #implement uniform smoothing in a window
-    def uniform_smooth(self, data, window_size=5):
-        """
-        Apply uniform smoothing to the data.
-        """
-        if len(data) < window_size:
-            return data
-        kernel = np.ones(window_size) / window_size
-        smoothed_data = np.convolve(data, kernel, mode='valid')
-        return smoothed_data
-
-
-
-
+from tqdm import trange
+import os
 
         
 class LearnFrame():
     print_args = classmethod(print_args)
     def __init__(self, model, data):
-        self.optim_epoch = 0
         self.model=model
-        self.return_labels = self.model.optimize_return_labels
-
-        
-        try:
-            self.test_return_labels = self.model.test_return_labels
-        except:
-            self.test_return_labels = self.return_labels
-        env_data = False
-        if isinstance(data, EnvData):
-            env_data = True
-        self.metric = Metric(self.return_labels, self.test_return_labels, env_data = env_data)
-
-        if data == DatasetLoader:
-            data = data()
         self.data = data
 
 
@@ -299,13 +30,34 @@ class LearnFrame():
 
     def reset(self):
         self.data.reset()
-        self.metric.env_reset()
 
     def collect(self):
         self.model.train()
         done, reward = self.data.collect(self.model)
-        self.metric.env_step(reward,done)
         return done
+
+    def train(self,test_freq, epochs,gradient_accumulation_steps, path):
+        for i in trange(self.model.optimizer._optimizer_steps_counter, epochs):
+
+            self.optimize()
+
+            if (i+1)%test_freq == 0:
+                self.test(steps=gradient_accumulation_steps)
+            
+            if (i+1) % 10000 == 0:
+                dire = path + f"{(i+1)}"
+                
+                try:
+                    os.mkdir(dire)
+                except:
+                    pass
+                self.save(dire)
+        dire = path + "final"
+        try:
+            os.mkdir(dire)
+        except:
+            pass
+        self.save(dire)
 
     def optimize(self):
         """
@@ -320,79 +72,33 @@ class LearnFrame():
         """        
         self.model.train()
         optimizer_return = False
-        trains = []
+
         while optimizer_return == False:
             #Get the next batch
             X = self.data.train_data()
             if X is None:
                 return 
             
-            train, optimizer_return = self.model.optimize(X)
-            if train != False:
-                trains.append(train)
-        step, optimizer_metrics = optimizer_return
+            optimizer_return = self.model.optimize(X)
         
-        train = tuple(np.mean(trains,axis=0))
-        
-        self.optim_epoch = step
-        last_lr = self.model.last_lr()
-
-        self.metric.train_data.append(train)
-        self.metric.train_data_ix.append(self.optim_epoch)
-        self.metric.optimizer_metrics.append(optimizer_metrics)
-        self.metric.param_magnitutes.append(self.model.param_norm())
-        if last_lr:
-            self.metric.lrs.append(last_lr[0])
-        
-        return train
-        
-
     def test(self, steps = 1):
         self.model.eval()
         test_return = False
-        losses = []
-        for _ in range(steps):
-            if isinstance(self.data, EnvData):
-                loss = self.data.emulate(self.model)
-                losses.append(loss)
-                break
-                
-            else:
-                while test_return == False:
-                    X = self.data.test_data()
-                
-                    loss, test_return = self.model.test(X)
-                    if loss != False:
-                        losses.append(loss)
-                
         
-        loss = tuple(np.mean(losses,axis=0))
+        for _ in range(steps):
+            while test_return == False:
+                X = self.data.test_data()
+                test_return = self.model.test(X)
                 
-        if isinstance(self.data, EnvData):
-            self.metric.duration_data.append(loss[0])
-            self.metric.reward_data.append(loss[1])
-        else:
-            self.metric.test_data.append(loss)
-            self.metric.test_data_ix.append(self.optim_epoch)
-
     def save(self, file_name, save_data = True):
         self.data.save(file_name)
         if save_data:
             self.model.save(file_name)
 
-        with open(file_name + "/data.pkl", 'wb') as f:
-            pickle.dump({
-                'metric': self.metric,
-            }, f)
-
     def load(self, file_name, load_data = True):
         self.model = self.model.load(file_name)
         if load_data:
             self.data.load(file_name = file_name)
-        with open(file_name + "/data.pkl", 'rb') as f:
-            data = pickle.load(f)
-            self.metric = data['metric']
-        self.optim_epoch = max(self.metric.train_data_ix) + 1
 
 
     def get_anim(self, name = None, interval = 100):
@@ -421,8 +127,5 @@ class LearnFrame():
         writervideo = animation.FFMpegWriter(fps=60) 
         anim.save(name + ".mp4", writer=writervideo) 
         plt.close()
-
-    def plot(self, show_result = True, log = False,save = None, show_lrs = False, window_size = 12, text="", test_steps = None):
-        self.metric.plot(show_result=show_result, log=log,save=save,show_lrs=show_lrs, window_size=window_size, text = text, test_steps = test_steps)
 
 

@@ -23,10 +23,19 @@ class SaneLinearTokenizerBeforePosition(nn.Module):
         self.divide_ix = max_positions[1]
         self.linear_hash= nn.Linear(in_features,out_features)
         self.linear_mlp = nn.Linear(in_features,out_features)
+        self._init_weights()
     def forward(self,X):
         x,p = X
         hash,mlp = x[:,:-self.divide_ix],  x[:, -self.divide_ix:]
         return torch.cat( (self.linear_hash(hash), self.linear_mlp(mlp)), dim=1),p
+    def _init_weights(self):
+        nn.init.kaiming_uniform_(self.linear_hash.weight)
+        nn.init.kaiming_uniform_(self.linear_mlp.weight)
+        if self.linear_hash.bias is not None:
+            nn.init.zeros_(self.linear_hash.bias)
+        
+        if self.linear_mlp.bias is not None:
+            nn.init.zeros_(self.linear_mlp.bias)
 
 class ChunkwiseLinearTokenizer(nn.Module):
     def __init__(self, chunk_size, out_dim):
@@ -65,6 +74,8 @@ class ChunkwisePositionalEmbedding(nn.Module):
         self.chunk_size = chunk_size
         
         self.positional_embedding = nn.Embedding(max_positions, embed_dim)
+
+        self._init_weights()
     def forward(self, p):
         D = p.shape[-1]
         orig_shape = tuple(p.shape[:-1])
@@ -75,6 +86,8 @@ class ChunkwisePositionalEmbedding(nn.Module):
         pe = pe.reshape(orig_shape + (self.embed_dim * n_chunks,))
 
         return pe
+    def _init_weights(self):
+        nn.init.normal_(self.positional_embedding.weight, mean=0.0, std=0.02)
 
 class SaneXYZPositionalEmbedding(nn.Module):
     def __init__(self, max_positions = [5000000, 25], embed_dim = 128, input_dim = 256):
@@ -88,20 +101,25 @@ class SaneXYZPositionalEmbedding(nn.Module):
         self.hash_index_layerwise = ChunkwisePositionalEmbedding(max_positions=700000, embed_dim= 2*embed_dim//input_dim, chunk_size=1)
 
         self.mlp_embed = nn.Embedding(max_positions[1], embed_dim)
+
+        self._init_weights()
     
+    def _init_weights(self):
+        nn.init.kaiming_uniform_(self.hash_xyz.weight)
+        if self.hash_xyz.bias is not None:
+            nn.init.zeros_(self.hash_xyz.bias)
+        
+        nn.init.normal_(self.mlp_embed.weight, mean=0.0, std=0.02)
+        
     def forward(self, X):
         x,p = X
 
         hash, mlp = p[:,:-self.max_positions[1]], p[:, -self.max_positions[1]:].long()
-
         hash_xyz, hash_indices = hash[:,:,:3], hash[:,:,3:].long()
 
         l = hash_indices.shape[-1] // 3
         
-
         hash_indices_global, hash_layers, hash_indices_layerwise = self.hash_index_global(hash_indices[...,:l]), self.hash_layer(hash_indices[...,l:2*l]), self.hash_index_layerwise(hash_indices[...,2*l:])
-
-
         he_xyz, mlpe = self.hash_xyz(hash_xyz), self.mlp_embed(mlp[...,0])
 
  

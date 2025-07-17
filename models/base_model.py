@@ -35,6 +35,19 @@ class BaseClassMeta(type):
 					return wrapped_func
 				wrapped = make_wrapper(method).__get__(obj)
 				setattr(obj, name, wrapped)
+		
+		transform_methods = getattr(obj, '_to_device_methods_with_buffer', [])
+		for name in transform_methods:
+			method = getattr(obj, name, None)
+			if callable(method):
+				def make_wrapper(func):
+					def wrapped_func(self, X, *a, **kw):
+						X = self.ensure_with_stream(X)
+						r = func(X, *a, **kw)
+						return r
+					return wrapped_func
+				wrapped = make_wrapper(method).__get__(obj)
+				setattr(obj, name, wrapped)
 		return obj
 
 
@@ -99,8 +112,8 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 	dependencies = []
 	optimize_return_labels = []
 
-	#_to_device_methods = ["forward", "encode", "decode", "embed", "get_loss", "get_action", "optimize"]
-	_to_device_methods = ["optimize", "test"]
+	_to_device_methods = ["forward", "encode", "decode", "embed", "get_action"]
+	_to_device_methods_with_buffer = ["optimize", "test"]
 	def __init__(self, device = None, criterion = nn.MSELoss(), 
 			  	amp = False, torch_compile = False, gpu_prefetch = 1):
 		"""
@@ -110,7 +123,9 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.criterion = criterion
 		self.training = True
 		self.gpu_prefetch = gpu_prefetch
+
 		self.writer = SummaryWriter(log_dir="logs")
+		self.writer_losses, self.writer_metrics = [] , []
 		
 		self.nets = []
 		self.params = []
@@ -131,6 +146,7 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		self.train()
 		self.set_optimizers()
 		self.init_log_names()
+		self.init_param_names()
 	def __call__(self, X):
 		return self.forward(X)
 
@@ -139,28 +155,28 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 
 	def optimize(self,X):
 		if len(self.train_queue) < self.gpu_prefetch:
-			return False, False
+			return False
 		X, stream = self.train_queue.pop(0)
 		with torch.cuda.stream(stream):
 			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
-				loss, losses,metrics = self.get_loss(X)
-			
-			optimizer_return = self.back_propagate(loss)
+				loss = self.get_loss(X)
+			optimizer_step = self.back_propagate(loss)
 		self.streams.append(stream)
-		self.log(losses,metrics)
-
-		return return_loss, optimizer_return
+		if optimizer_step:
+			self.log()
+		return optimizer_step
 	
 	@torch.no_grad()
 	def test(self,X : tuple):
 		if len(self.test_queue) < self.gpu_prefetch:
-			return False, False
+			return False
 		X, stream = self.test_queue.pop(0)
 		with torch.cuda.stream(stream):
 			with torch.autocast(device_type='cuda', dtype=torch.float16, enabled = self.amp):
-				loss, return_loss = self.get_loss(X)
+				loss = self.get_loss(X)
 		self.streams.append(stream)
-		return return_loss, True
+		self.log()
+		return True
 	
 	@abstractmethod
 	def get_loss(self,X : tuple):
@@ -199,6 +215,13 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 			X = X.to(self.device, non_blocking=True)
 		return X
 	def ensure(self, X):
+		if isinstance(X, tuple):
+			X =  tuple(map(self.ensure_tensor_device, X))
+		else:
+			X = self.ensure_tensor_device(X)
+		return X
+
+	def ensure_with_stream(self,X):
 		#Helper function for ensure tensor device
 		stream = self.streams.pop(0)
 		with torch.cuda.stream(stream):
@@ -209,11 +232,25 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		
 		queue = self.train_queue if self.training else self.test_queue
 		queue.append((X,stream))
-		return X
 
 	#==========================================================================================
 	# Initializers
 	
+	def init_param_names(self):
+		for net_ix,net in enumerate(self.nets):
+			for n,p in net.named_parameters():
+				net_pre = f"Net{net_ix}/"
+				flag = "layers" in n
+				n = n.replace("_orig_mod.","").split(".")
+				
+				b = "".join(n[:2]) + "/"
+				n = n[2:]
+				if flag:
+					b += "".join(n[:2]) + "/"
+					n = n[2:]
+				
+				p.dpname = net_pre + b + ".".join(n)
+
 
 	def init_objects(self):
 		self.criterion = self.objects[0]
@@ -290,8 +327,13 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 
 	#===========================================================================================
 
-	def log(self, losses, metrics):
-		epoch = self.optimizer.optimizer_steps_counter		
+	def log(self):
+		losses = torch.tensor(self.writer_losses)
+		if len(losses.shape) == 1:
+			losses = losses.unsqueeze(0)
+		losses = losses.mean(0)
+		metrics = torch.tensor(self.writer_metrics).mean(0)
+		epoch = self.optimizer._optimizer_steps_counter		
 		tag_prefix = "Loss/Train/" if self.training else "Loss/Test/"
 		for loss, name in zip(losses,self.losses_names):
 			self.writer.add_scalar(tag_prefix + name, loss.item(), epoch)
@@ -299,6 +341,25 @@ class BaseModel(ABC, metaclass=CombinedMeta):
 		tag_prefix = "Metric/Train/" if self.training else "Metric/Test/"
 		for loss, name in zip(metrics,self.metrics_names):
 			self.writer.add_scalar(tag_prefix + name, loss.item(), epoch)
+
+		self.writer_losses, self.writer_metrics = [], []
+
+		if False and not self.training:
+			tag_prefix = "Detail/"
+			for group in self.optimizer.optimizer.param_groups:
+				for p in group["params"]:
+					state = self.optimizer.optimizer.state[p]
+				
+					if 'exp_avg_sq' in state:
+						# Log the average effective lr
+						v_t = state['exp_avg_sq'].detach().cpu()
+						self.writer.add_histogram(tag_prefix + p.dpname + "/Second_Moment_Norm",v_t, epoch )
+					if 'exp_avg' in state:
+						m_t = state['exp_avg'].detach().cpu()
+						self.writer.add_histogram(tag_prefix + p.dpname + "/First_Moment_Norm",m_t, epoch )
+					
+					param_norm = p.data.detach().cpu()
+					self.writer.add_histogram(tag_prefix + p.dpname + "/Param_Norm",param_norm, epoch )
 
 	def param_norm(self):
 		total_norms = []

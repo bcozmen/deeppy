@@ -215,8 +215,8 @@ class IngpData(Dataset):
         [t1,p1,m1], r1 = self.load_weights(obj1_path, points), obj_1_transform
         (t2,p2,m2), r2 = self.load_weights(obj2_path, points), obj_2_transform
         
-        r1 += torch.randn_like(r1) * torch.deg2rad(torch.tensor(2.5))
-        r2 += torch.randn_like(r2) * torch.deg2rad(torch.tensor(2.5))
+        r1 += torch.randn_like(r1) * torch.deg2rad(torch.tensor(1))
+        r2 += torch.randn_like(r2) * torch.deg2rad(torch.tensor(1))
         return t1.numpy(), p1.numpy(), m1.numpy(), r1.numpy(), t2.numpy(), p2.numpy(), m2.numpy(), r2.numpy()
         
     def load_weights(self, file_path, points):
