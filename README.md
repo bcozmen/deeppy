@@ -1,4 +1,9 @@
+[![PyPI version](https://img.shields.io/pypi/v/requests.svg)](https://pypi.org/project/deeppy/)
+
+
 # 🔩 Deeppy
+
+
 
 **Deeppy** is a flexible deep learning framework built on **PyTorch**, designed to simplify training workflows while supporting powerful research capabilities. It embraces a **modular approach** by **decoupling data, algorithms, and neural networks**, making it easy to swap components, experiment with new ideas, and customize pipelines end-to-end.
 
