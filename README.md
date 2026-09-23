@@ -1,4 +1,4 @@
-[![PyPI version](https://img.shields.io/pypi/v/requests.svg)](https://pypi.org/project/deeppy-ai/)
+[![PyPI version](https://img.shields.io/pypi/v/deeppy-ai.svg)](https://pypi.org/project/deeppy-ai/)
 
 ```bash
 pip install deeppy-ai
