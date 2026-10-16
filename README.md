@@ -1,5 +1,14 @@
 [![PyPI version](https://img.shields.io/pypi/v/deeppy-ai.svg?color=green)](https://pypi.org/project/deeppy-ai/)
 
+> ⚠️ **Note: Earlier Version**
+>
+> This repository demonstrates an earlier version of **Deeppy**, a modular deep learning framework built on PyTorch.
+>
+> The current version is available on [GitHub](https://github.com/bcozmen/deeppy_v2/) and [PyPI](https://pypi.org/project/deeppy-ai/). It introduces improvements such as **automatic TensorBoard logging integration** and structural changes.
+>
+> Tutorials and documentation for the current version are not yet available. This repository is retained for demonstration purposes.
+
+
 ```bash
 pip install deeppy-ai
 ```
