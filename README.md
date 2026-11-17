@@ -6,6 +6,7 @@
 >
 > The current version is available on [GitHub](https://github.com/bcozmen/deeppy_v2/) and [PyPI](https://pypi.org/project/deeppy-ai/). It introduces improvements such as **automatic TensorBoard logging integration** and structural changes.
 >
+> A future version with distributed training is being built  [GitHub](https://github.com/bcozmen/deeppy_v3/)
 > Tutorials and documentation for the current version are not yet available. This repository is retained for demonstration purposes.
 
 
